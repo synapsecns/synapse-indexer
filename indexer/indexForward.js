@@ -23,6 +23,7 @@ export async function indexForward(chainConfig) {
     console.log(`${chainName}: indexed latest block: ${indexedLatestBlock}`);
 
     // Init contract
+    // TODO: Init in config
     let contract = new ethers.Contract(
         bridgeContractAddress,
         chainConfig.abi,

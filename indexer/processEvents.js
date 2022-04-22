@@ -1,46 +1,114 @@
-import {Topics, getEventForTopic} from "../config/topics.js";
-import {ethers} from "ethers";
-import {getSynapseBridgeABI} from "../abis/abi.js";
-/*
- {
-    blockNumber: 14604143,
-    blockHash: '0xb844b04399748b8120b24bb7749ac1f2bd9df8bffe3f61fe71a6bfb8c3282577',
-    transactionIndex: 157,
-    removed: false,
-    address: '0x2796317b0fF8538F253012862c06787Adfb8cEb6',
-    data: '0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000330ef0ae97769fc000000000000000000000000000000000000000000000000002386f26fc10000',
-    topics: [
-      '0x8b0afdc777af6946e53045a4a75212769075d30455a212ac51c9b16f9c5c9b26',
-      '0x00000000000000000000000023f6dcd76494a65f12d7871dd4138a6f2ccb3579',
-      '0x42248011d3e2d47f0b2badfb7a2f5ff98882ae41eac69c1289b29ee05e3cdc72'
-    ],
-    transactionHash: '0x8b05d3682e5a1bfc4a3e2b7752f38d94ef6a78b59d8618049269f9e4d315e432',
-    logIndex: 275,
-    removeListener: [Function (anonymous)],
-    getBlock: [Function (anonymous)],
-    getTransaction: [Function (anonymous)],
-    getTransactionReceipt: [Function (anonymous)]
-  }
- */
-export function processEvents(contract, chainConfig, events) {
-    events.forEach(async (event) => {
+import {Topics, getEventForTopic, getTopicsHash} from "../config/topics.js";
+import {BridgeTransaction} from "../db/transaction.js";
+import {BigNumber, ethers} from "ethers";
+import {Networks, Tokens} from "@synapseprotocol/sdk";
 
-        // const txnHash = event.transactionHash;
-        // const txnInfo = await event.getTransaction();
-        // const topicHash = event.topics[0];
-        //
-        // const eventInfo = getEventForTopic(topicHash);
-        // const eventName = eventInfo.eventName;
-        // const direction = eventInfo.direction;
+/**
+ * Receives array of logs and returns information pulled from the actual Event log
+ * The event could be TokenDepositAndSwap, TokenDeposit, etc.
+ *
+ * @param {Object} contractInterface
+ * @param {Array<Object>} logs
+ * @returns {Object}
+ */
+function parseEventLog(contractInterface, logs) {
+    let data = {};
+    for (let topicHash of getTopicsHash()) {
+        for (let log of logs) {
+            if (log.topics.includes(topicHash)) {
+                let logArgs = contractInterface.parseLog(log).args;
+                data.toChainId = logArgs.chainId.toString()
+                data.toAddress = logArgs.to
+                return data;
+            }
+        }
+    }
+    return data;
+}
+
+/**
+ * Receives array of logs and returns information pulled from the Transfer log
+ *
+ * @param {Array<Object>} logs
+ * @param {Object} chainConfig
+ * @returns {Object}
+ */
+function parseTransferLog(logs, chainConfig) {
+    // Find log for the Transfer() event
+    // Address is token contract address, e.i tokenSent
+    let res = {};
+    for (let log of logs) {
+        if (Object.keys(chainConfig.tokens).includes(log.address)) {
+            res.sentTokenAddress = log.address;
+            res.sentTokenSymbol = chainConfig.tokens[log.address].symbol;
+            res.sentValue = BigNumber.from(log.data).toString();
+            return res;
+        }
+    }
+    return res;
+}
+
+/**
+ * Pulls out fields from the transaction information
+ *
+ * @param {Object} txn
+ * @returns {Object}
+ */
+function parseTxn(txn) {
+    const fromAddress = txn.from ? txn.from : null;
+
+    return {fromAddress}
+}
+
+export async function processEvents(contract, chainConfig, events) {
+    for (let event of events) {
+
+        const fromTxnHash = event.transactionHash;
+        const txn = await event.getTransaction();
+        const block = await event.getBlock();
+
+        const topicHash = event.topics[0];
+        const eventInfo = getEventForTopic(topicHash);
+        const direction = eventInfo.direction;
 
         const txnReceipt = await event.getTransactionReceipt();
-        let log = contract.interface.parseLog(txnReceipt.logs[1]);
-        console.log(log)
 
-        // console.log(donor, value, tokenID)
+        if (direction === "OUT") {
 
+            // Process transaction going out of a chain
+            let {fromAddress} = parseTxn(txn)
+            let {toChainId, toAddress} = parseEventLog(
+                contract.interface,
+                txnReceipt.logs,
+            );
+            let {sentTokenAddress, sentTokenSymbol, sentValue} = parseTransferLog(
+                txnReceipt.logs,
+                chainConfig
+            );
+            const fromChainId = chainConfig.id;
+            const kappa = ethers.utils.keccak256(
+                ethers.utils.toUtf8Bytes(fromTxnHash)
+            );
+            const sentTime = block.timestamp;
+            const pending = true;
 
-        process.exit(0)
+            const transaction = new BridgeTransaction({
+                fromTxnHash,
+                fromAddress,
+                toAddress,
+                fromChainId,
+                toChainId,
+                sentValue,
+                sentTokenAddress,
+                sentTokenSymbol,
+                kappa,
+                sentTime,
+                pending
+            })
+            await transaction.save();
+        } else {
+            console.log("IN found...")
+        }
+    }
 
-    })
 }

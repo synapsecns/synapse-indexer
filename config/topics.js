@@ -81,13 +81,3 @@ export function getEventForTopic(hash) {
     return Topics[hash];
 }
 
-/**
- *
- * @returns {[String]}
- */
-export function getTopicDirection(hash) {
-// INDEX BACKWARDS FROM
-    // INDEX BACKWARDS TILL
-    // INDEX FORWARD FROM
-
-}

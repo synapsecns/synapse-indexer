@@ -1,4 +1,5 @@
 import {ChainId, Networks, SwapPools} from "@synapseprotocol/sdk"
+import {ethers} from "ethers";
 
 export const ChainConfig = {
     [ChainId.ETH] : {
@@ -33,16 +34,17 @@ function buildPools(chainId) {
  */
 function buildTokenInfo(chainId) {
     let tokenList = SwapPools.getAllSwappableTokensForNetwork(chainId);
-    let resList = [];
+    let resObj = {};
     tokenList.forEach(tokenObj => {
         let address = tokenObj.address(chainId);
         let decimals = tokenObj.decimals(chainId);
         let symbol = tokenObj.symbol;
         if (address) {
-            resList.push({
-                [address]: {decimals, symbol}
-            });
+            resObj[`${address}`] = {decimals, symbol}
+
+            let checksumAddress = ethers.utils.getAddress(address);
+            resObj[`${checksumAddress}`] = {decimals, symbol}
         }
     });
-    return resList;
+    return resObj;
 }
