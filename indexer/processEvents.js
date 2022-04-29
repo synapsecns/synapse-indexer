@@ -1,7 +1,19 @@
 import {Topics, getEventForTopic, getTopicsHash} from "../config/topics.js";
 import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, ethers} from "ethers";
-import {Networks, Tokens} from "@synapseprotocol/sdk";
+import {ChainId, Networks, Tokens} from "@synapseprotocol/sdk";
+import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
+import InputDataDecoder from 'ethereum-input-data-decoder'
+
+function getFunctionForEvent(eventName) {
+    switch (eventName) {
+        case "TokenWithdrawAndRemove":
+            return "withdrawAndRemove"
+        case "TokenMintAndSwap":
+            return "mintAndSwap"
+    }
+    return null;
+}
 
 /**
  * Receives array of logs and returns a dict with their args
@@ -37,12 +49,16 @@ function parseTransferLog(logs, chainConfig) {
             res.sentTokenAddress = log.address;
             res.sentTokenSymbol = chainConfig.tokens[log.address].symbol;
 
+            let sentValue = log.data;
             if (res.sentTokenSymbol !== "WETH" && chainConfig.id === 1) {
-                // TODO: add token contract
-                // res.sentValue = tokenContract.parseLog(log).args;
-            } else {
-                res.sentValue = BigNumber.from(log.data).toString();
+                // Not an ERC-20 token, hence parsing value ?
+                try {
+                    sentValue = getTokenContract(chainConfig.id, res.sentTokenAddress).interface.parseLog(log).args.value;
+                } catch (e) {
+                    console.error(e)
+                }
             }
+            res.sentValue = BigNumber.from(sentValue).toString();
 
             return res;
         }
@@ -53,7 +69,7 @@ function parseTransferLog(logs, chainConfig) {
 async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chainId) {
     let poolContract = new ethers.Contract(
         poolAddress,
-        chainConfig.basePoolAbi,
+        getBasePoolAbi(),
         contract.provider
     )
 
@@ -62,13 +78,13 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
     for (let i = 0; i < (1 << 8); i++) {
         try {
             let tokenRes = await poolContract.functions.getToken(i);
-            res.push(tokenRes);
+            res.push(tokenRes[0]);
         } catch (e) {
             break;
         }
     }
 
-    console.log(res);
+    return res;
 }
 
 
@@ -94,7 +110,9 @@ export async function processEvents(contract, chainConfig, events) {
         const topicHash = event.topics[0];
         const eventInfo = getEventForTopic(topicHash);
         const eventDirection = eventInfo.direction;
-        const eventName = eventInfo.name;
+        const eventName = eventInfo.eventName;
+
+        console.log(eventInfo)
 
         const txnReceipt = await event.getTransactionReceipt();
         let eventLogArgs = getEventLogArgs(
@@ -103,7 +121,6 @@ export async function processEvents(contract, chainConfig, events) {
         );
 
         if (eventDirection === "OUT") {
-            continue
 
             // Process transaction going out of a chain
             let toChainId = eventLogArgs.chainId.toString()
@@ -117,6 +134,8 @@ export async function processEvents(contract, chainConfig, events) {
             const kappa = ethers.utils.keccak256(
                 ethers.utils.toUtf8Bytes(fromTxnHash)
             );
+            console.log("OUT with kappa", kappa)
+
             const sentTime = block.timestamp;
             const pending = true;
 
@@ -136,15 +155,17 @@ export async function processEvents(contract, chainConfig, events) {
             await transaction.save();
         } else {
             let kappa = eventLogArgs.kappa;
+
+            console.log("IN with kappa", kappa)
+
             let receivedValue = null;
             let receivedToken = "";
             let swapSuccess = null;
             let data = {}
 
             if (eventName === "TokenWithdrawAndRemove" || eventName ==="TokenMintAndSwap") {
-                // pool = get_pool_data(chain, inp_args['pool'])
-                let input = txn.input
-                let inputArgs = contract.decodeFunctionData(input)
+                let input = txn.data
+                let inputArgs = contract.interface.decodeFunctionData(getFunctionForEvent(eventName), input)
 
                 // Get list of stable coin addresses
                 let swapPoolAddresses = await getSwapPoolCoinAddresses(
@@ -155,7 +176,7 @@ export async function processEvents(contract, chainConfig, events) {
                 )
 
                 // Build out data from event log args
-                let data = {
+                data = {
                     to: eventLogArgs.to,
                     fee: eventLogArgs.fee,
                     tokenIndexTo: eventLogArgs.swapTokenIndex,
@@ -166,7 +187,7 @@ export async function processEvents(contract, chainConfig, events) {
                 let receivedToken = null;
                 if (data.swapSuccess) {
                     receivedToken = swapPoolAddresses[data.tokenIndexTo]
-                } else if (chainConfig.id === 1) {
+                } else if (chainConfig.id === ChainId.ETH) {
                     // nUSD (eth) - nexus assets are not in eth pools.
                     receivedToken = '0x1b84765de8b7566e4ceaf4d0fd3c5af52d3dde4f'
                 } else {
@@ -175,7 +196,7 @@ export async function processEvents(contract, chainConfig, events) {
                 swapSuccess = data.swapSuccess;
 
             } else if (eventName === "TokenWithdraw" || eventName ==="TokenMint") {
-                let data = {
+                data = {
                     to: eventLogArgs.to,
                     fee: eventLogArgs.fee,
                     token: eventLogArgs.token,
@@ -191,12 +212,16 @@ export async function processEvents(contract, chainConfig, events) {
                 console.error("In Event not convered")
             }
 
+            console.log("Data is", data)
+
             // Avalanche GMX not ERC-20 compatible
             if (chainConfig.id === 43114 && receivedToken === "0x20A9DC684B4d0407EF8C9A302BEAaA18ee15F656") {
                 receivedToken = "0x62edc0692BD897D2295872a9FFCac5425011c661";
             }
 
             if (!receivedValue) {
+                let tokenContract = getTokenContract(chainConfig.id, receivedToken)
+
                 /*
                     contract = TOKENS_INFO[chain][received_token.hex()]['_contract'].events
 

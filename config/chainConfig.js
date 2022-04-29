@@ -1,7 +1,10 @@
 import {ChainId, Networks, SwapPools} from "@synapseprotocol/sdk"
 import {ethers} from "ethers";
 
-export const ChainConfig = {
+let _w3_PROVIDER_CACHE = {}
+let _TOKEN_CONTRACT_CACHE = {}
+
+const ChainConfig = {
     [ChainId.ETH] : {
         id: ChainId.ETH,
         name: Networks.ETH.name,
@@ -11,7 +14,6 @@ export const ChainConfig = {
         startBlock: 13566427,
         pools: buildPools(ChainId.ETH),
         tokens: buildTokenInfo(ChainId.ETH),
-        basePoolAbi: getBasePoolAbi()
     }
 }
 
@@ -52,10 +54,78 @@ function buildTokenInfo(chainId) {
     return resObj;
 }
 
+/**
+ * Gets a web3 provider object for a chain
+ * @param chainId
+ * @returns {Object}
+ */
+function getW3Provider(chainId) {
+    if (chainId in _w3_PROVIDER_CACHE) {
+        return _w3_PROVIDER_CACHE[chainId]
+    }
+    return _w3_PROVIDER_CACHE[chainId] = ethers.getDefaultProvider(ChainConfig[chainId].rpc);
+}
+
+/**
+ * Gets a web3 contract object for a token on a particular chain
+ * @param {String} chainId
+ * @param {String} tokenAddress
+ * @returns {ethers.Contract}
+ */
+function getTokenContract(chainId, tokenAddress) {
+    if (_TOKEN_CONTRACT_CACHE[chainId] && _TOKEN_CONTRACT_CACHE[chainId][tokenAddress]) {
+        return _TOKEN_CONTRACT_CACHE[chainId][tokenAddress];
+    }
+    if (!_TOKEN_CONTRACT_CACHE[chainId]) {
+        _TOKEN_CONTRACT_CACHE[chainId] = {}
+    }
+    console.log(`Getting token contract for ${tokenAddress} on ${chainId}`);
+
+    _TOKEN_CONTRACT_CACHE[chainId][tokenAddress] = new ethers.Contract(
+        tokenAddress,
+        getBareERC20Abi(),
+        getW3Provider(chainId)
+    )
+
+    return _TOKEN_CONTRACT_CACHE[chainId][tokenAddress]
+}
+
+/**
+ * Gets a web3 contract object for a token on a particular chain
+ * @param {String} contractAddress
+ * @param {Array} abi
+ * @param {ethers.providers.BaseProvider} provider
+ * @returns {ethers.BaseContract}
+ */
+function buildBridgeContract(contractAddress, abi, provider) {
+    return new ethers.Contract(
+        contractAddress,
+        abi,
+        provider
+    )
+}
+
+/**
+ * Returns ABI for the stable swap pool
+ * @returns {Array}
+ */
 function getBasePoolAbi() {
     return [{"inputs":[{"internalType":"uint8","name":"index","type":"uint8"}],"name":"getToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"getAdminBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getVirtualPrice","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
 }
 
+/**
+ * Returns ABI for an ERC 20 token, which is the ABI for every token on a chain anyway
+ * @returns {Array}
+ */
 function getBareERC20Abi() {
     return [{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"}]
+}
+
+export {
+    ChainConfig,
+    getW3Provider,
+    buildBridgeContract,
+    getTokenContract,
+    getBasePoolAbi,
+    getBareERC20Abi
 }
