@@ -4,26 +4,21 @@ import {BigNumber, ethers} from "ethers";
 import {Networks, Tokens} from "@synapseprotocol/sdk";
 
 /**
- * Receives array of logs and returns information pulled from the actual Event log
- * The event could be TokenDepositAndSwap, TokenDeposit, etc.
+ * Receives array of logs and returns a dict with their args
  *
  * @param {Object} contractInterface
  * @param {Array<Object>} logs
  * @returns {Object}
  */
-function parseEventLog(contractInterface, logs) {
-    let data = {};
+function getEventLogArgs(contractInterface, logs) {
     for (let topicHash of getTopicsHash()) {
         for (let log of logs) {
             if (log.topics.includes(topicHash)) {
-                let logArgs = contractInterface.parseLog(log).args;
-                data.toChainId = logArgs.chainId.toString()
-                data.toAddress = logArgs.to
-                return data;
+                return contractInterface.parseLog(log).args;
             }
         }
     }
-    return data;
+    return {};
 }
 
 /**
@@ -41,12 +36,41 @@ function parseTransferLog(logs, chainConfig) {
         if (Object.keys(chainConfig.tokens).includes(log.address)) {
             res.sentTokenAddress = log.address;
             res.sentTokenSymbol = chainConfig.tokens[log.address].symbol;
-            res.sentValue = BigNumber.from(log.data).toString();
+
+            if (res.sentTokenSymbol !== "WETH" && chainConfig.id === 1) {
+                // TODO: add token contract
+                // res.sentValue = tokenContract.parseLog(log).args;
+            } else {
+                res.sentValue = BigNumber.from(log.data).toString();
+            }
+
             return res;
         }
     }
     return res;
 }
+
+async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chainId) {
+    let poolContract = new ethers.Contract(
+        poolAddress,
+        chainConfig.basePoolAbi,
+        contract.provider
+    )
+
+    let res = [];
+
+    for (let i = 0; i < (1 << 8); i++) {
+        try {
+            let tokenRes = await poolContract.functions.getToken(i);
+            res.push(tokenRes);
+        } catch (e) {
+            break;
+        }
+    }
+
+    console.log(res);
+}
+
 
 /**
  * Pulls out fields from the transaction information
@@ -69,18 +93,22 @@ export async function processEvents(contract, chainConfig, events) {
 
         const topicHash = event.topics[0];
         const eventInfo = getEventForTopic(topicHash);
-        const direction = eventInfo.direction;
+        const eventDirection = eventInfo.direction;
+        const eventName = eventInfo.name;
 
         const txnReceipt = await event.getTransactionReceipt();
+        let eventLogArgs = getEventLogArgs(
+            contract.interface,
+            txnReceipt.logs,
+        );
 
-        if (direction === "OUT") {
+        if (eventDirection === "OUT") {
+            continue
 
             // Process transaction going out of a chain
+            let toChainId = eventLogArgs.chainId.toString()
+            let toAddress = eventLogArgs.to
             let {fromAddress} = parseTxn(txn)
-            let {toChainId, toAddress} = parseEventLog(
-                contract.interface,
-                txnReceipt.logs,
-            );
             let {sentTokenAddress, sentTokenSymbol, sentValue} = parseTransferLog(
                 txnReceipt.logs,
                 chainConfig
@@ -107,7 +135,94 @@ export async function processEvents(contract, chainConfig, events) {
             })
             await transaction.save();
         } else {
-            console.log("IN found...")
+            let kappa = eventLogArgs.kappa;
+            let receivedValue = null;
+            let receivedToken = "";
+            let swapSuccess = null;
+            let data = {}
+
+            if (eventName === "TokenWithdrawAndRemove" || eventName ==="TokenMintAndSwap") {
+                // pool = get_pool_data(chain, inp_args['pool'])
+                let input = txn.input
+                let inputArgs = contract.decodeFunctionData(input)
+
+                // Get list of stable coin addresses
+                let swapPoolAddresses = await getSwapPoolCoinAddresses(
+                    inputArgs.pool,
+                    chainConfig,
+                    contract,
+                    chainConfig.id
+                )
+
+                // Build out data from event log args
+                let data = {
+                    to: eventLogArgs.to,
+                    fee: eventLogArgs.fee,
+                    tokenIndexTo: eventLogArgs.swapTokenIndex,
+                    swapSuccess: eventLogArgs.swapSuccess,
+                    token: eventLogArgs.token
+                }
+
+                let receivedToken = null;
+                if (data.swapSuccess) {
+                    receivedToken = swapPoolAddresses[data.tokenIndexTo]
+                } else if (chainConfig.id === 1) {
+                    // nUSD (eth) - nexus assets are not in eth pools.
+                    receivedToken = '0x1b84765de8b7566e4ceaf4d0fd3c5af52d3dde4f'
+                } else {
+                    receivedToken = swapPoolAddresses[0];
+                }
+                swapSuccess = data.swapSuccess;
+
+            } else if (eventName === "TokenWithdraw" || eventName ==="TokenMint") {
+                let data = {
+                    to: eventLogArgs.to,
+                    fee: eventLogArgs.fee,
+                    token: eventLogArgs.token,
+                    amount: eventLogArgs.amount
+                }
+
+                receivedToken = data.token;
+
+                if (eventName === "TokenWithdraw") {
+                    receivedValue = data.amount - data.fee
+                }
+            } else {
+                console.error("In Event not convered")
+            }
+
+            // Avalanche GMX not ERC-20 compatible
+            if (chainConfig.id === 43114 && receivedToken === "0x20A9DC684B4d0407EF8C9A302BEAaA18ee15F656") {
+                receivedToken = "0x62edc0692BD897D2295872a9FFCac5425011c661";
+            }
+
+            if (!receivedValue) {
+                /*
+                    contract = TOKENS_INFO[chain][received_token.hex()]['_contract'].events
+
+                    for log in receipt['logs']:
+                        if log['address'].lower() == received_token.hex():
+                            with suppress(MismatchedABI):
+                                return contract.Transfer().processLog(log)['args']
+
+                    raise RuntimeError(
+                        f'did not converge: {chain}\n{received_token.hex()}\n{receipt}')
+                 */
+            }
+
+            if (eventName === "TokenMint") {
+                /*
+                 if received_value != data.amount:  # type: ignore
+                received_token, received_value = iterate_receipt_logs(
+                    receipt,
+                    check_factory(data.amount)  # type: ignore
+                )
+                 */
+            }
+
+            if (!swapSuccess) {
+                receivedValue -= data.fee;
+            }
         }
     }
 
