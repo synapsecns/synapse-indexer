@@ -15,7 +15,5 @@ async function indexChains() {
 }
 
 // Trigger indexing ever `interval` ms
-// let interval = 1000;
-// setInterval(indexChains, interval)
-
-await indexChains()
+let interval = 100000;
+setInterval(indexChains, interval)

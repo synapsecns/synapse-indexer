@@ -3,7 +3,6 @@ import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, ethers} from "ethers";
 import {ChainId, Networks, Tokens} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
-import InputDataDecoder from 'ethereum-input-data-decoder'
 
 function getFunctionForEvent(eventName) {
     switch (eventName) {
@@ -103,9 +102,10 @@ function parseTxn(txn) {
 export async function processEvents(contract, chainConfig, events) {
     for (let event of events) {
 
-        const fromTxnHash = event.transactionHash;
+        const txnHash = event.transactionHash;
         const txn = await event.getTransaction();
         const block = await event.getBlock();
+        const timestamp = block.timestamp;
 
         const topicHash = event.topics[0];
         const eventInfo = getEventForTopic(topicHash);
@@ -132,15 +132,12 @@ export async function processEvents(contract, chainConfig, events) {
             );
             const fromChainId = chainConfig.id;
             const kappa = ethers.utils.keccak256(
-                ethers.utils.toUtf8Bytes(fromTxnHash)
+                ethers.utils.toUtf8Bytes(txnHash)
             );
-            console.log("OUT with kappa", kappa)
-
-            const sentTime = block.timestamp;
             const pending = true;
 
             const transaction = new BridgeTransaction({
-                fromTxnHash,
+                fromTxnHash: txnHash,
                 fromAddress,
                 toAddress,
                 fromChainId,
@@ -149,17 +146,19 @@ export async function processEvents(contract, chainConfig, events) {
                 sentTokenAddress,
                 sentTokenSymbol,
                 kappa,
-                sentTime,
+                sentTime: timestamp,
                 pending
             })
             await transaction.save();
+            console.log(`OUT with kappa ${kappa} saved`)
+
         } else {
             let kappa = eventLogArgs.kappa;
 
             console.log("IN with kappa", kappa)
 
             let receivedValue = null;
-            let receivedToken = "";
+            let receivedToken = null;
             let swapSuccess = null;
             let data = {}
 
@@ -184,7 +183,7 @@ export async function processEvents(contract, chainConfig, events) {
                     token: eventLogArgs.token
                 }
 
-                let receivedToken = null;
+                // Determine received token
                 if (data.swapSuccess) {
                     receivedToken = swapPoolAddresses[data.tokenIndexTo]
                 } else if (chainConfig.id === ChainId.ETH) {
@@ -210,44 +209,68 @@ export async function processEvents(contract, chainConfig, events) {
                 }
             } else {
                 console.error("In Event not convered")
+                continue;
             }
-
-            console.log("Data is", data)
 
             // Avalanche GMX not ERC-20 compatible
             if (chainConfig.id === 43114 && receivedToken === "0x20A9DC684B4d0407EF8C9A302BEAaA18ee15F656") {
                 receivedToken = "0x62edc0692BD897D2295872a9FFCac5425011c661";
             }
 
+            // TODO: Move to searchLogs function
             if (!receivedValue) {
+                console.log("Searching logs for received value...")
                 let tokenContract = getTokenContract(chainConfig.id, receivedToken)
-
-                /*
-                    contract = TOKENS_INFO[chain][received_token.hex()]['_contract'].events
-
-                    for log in receipt['logs']:
-                        if log['address'].lower() == received_token.hex():
-                            with suppress(MismatchedABI):
-                                return contract.Transfer().processLog(log)['args']
-
-                    raise RuntimeError(
-                        f'did not converge: {chain}\n{received_token.hex()}\n{receipt}')
-                 */
+                for (let log of txnReceipt.logs) {
+                    console.log(`Comparing ${log.address} and ${receivedToken}`)
+                    if (log.address === receivedToken) {
+                        receivedValue = tokenContract.interface.parseLog(log).args.value;
+                        console.log(`Received value parsed is ${receivedValue}`)
+                        break;
+                    }
+                }
+                if (!receivedValue) {
+                    console.error('Error! Unable to find received value for log')
+                    continue;
+                }
+                console.log(`Received value is ${receivedValue}`);
             }
 
             if (eventName === "TokenMint") {
-                /*
-                 if received_value != data.amount:  # type: ignore
-                received_token, received_value = iterate_receipt_logs(
-                    receipt,
-                    check_factory(data.amount)  # type: ignore
-                )
-                 */
+                if (receivedValue !== data.amount) {
+                    console.log(`Event is TokenMint, received value is ${receivedValue} and amount is ${data.amount}`)
+                    for (let log of txnReceipt.logs) {
+                        receivedValue = BigNumber.from(log.data);
+                        receivedToken =  log.address;
+                        console.log(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
+                        if (data.amount.gt(receivedValue)) {
+                            break;
+                        }
+                    }
+                }
             }
 
             if (!swapSuccess) {
                 receivedValue -= data.fee;
             }
+
+            let inBridgeTxn = new BridgeTransaction(
+                {
+                    toTxnHash: txnHash,
+                    toAddress: data.to,
+                    receivedValue,
+                    receivedTokenAddress: receivedToken,
+                    receivedTokenSymbol: chainConfig?.tokens[receivedToken]?.symbol,
+                    swapSuccess,
+                    kappa,
+                    receivedTime: timestamp,
+                    toChainId: chainConfig.id,
+                    pending: false
+                }
+            )
+            await inBridgeTxn.save();
+            console.log(`IN with kappa ${kappa} saved, received token: ${receivedToken}`)
+
         }
     }
 
