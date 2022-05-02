@@ -33,7 +33,6 @@ export async function indexForward(chainConfig) {
         indexedLatestBlock,
         networkLatestBlock + 500
     )
-    console.log(`${chainName}: attempting to index until block: ${maxBlockToIndexUntil}`);
 
     // Get events between these blocks
     let filteredEvents = await bridgeContract.queryFilter(
@@ -43,13 +42,16 @@ export async function indexForward(chainConfig) {
                 getTopicsHash()
             ]
         },
-        indexedLatestBlock-500,
+        indexedLatestBlock,
         maxBlockToIndexUntil
     )
     console.log(`${chainName}: ${filteredEvents.length} latest events retrieved, now processing...`)
 
     // Process received events
+    let startTime = Math.floor(Date.now() / 1000)
     await processEvents(bridgeContract, chainConfig, filteredEvents)
+    let endTime = Math.floor(Date.now() / 1000)
+    console.log(`Processing took ${endTime - startTime} seconds`)
 
     // Update the latest block processed for chain
     await redisClient.set(`${chainName}_LATEST_BLOCK_INDEXED`, maxBlockToIndexUntil)
