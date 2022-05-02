@@ -18,8 +18,19 @@ export async function indexForward(chainConfig) {
     )
     indexedLatestBlock = (indexedLatestBlock) ? parseInt(indexedLatestBlock) : networkLatestBlock;
 
+    if (indexedLatestBlock === networkLatestBlock) {
+        console.log(`Already forward indexed until block ${indexedLatestBlock} for chain ${chainName}`);
+    }
+
+    // We forward upto 500 blocks ahead to account for service downtime and restart
+    let maxBlockToIndexUntil = Math.min(
+        networkLatestBlock,
+        indexedLatestBlock + 500
+    )
+
     console.log(`${chainName}: network latest block: ${networkLatestBlock}`);
     console.log(`${chainName}: indexed latest block: ${indexedLatestBlock}`);
+    console.log(`${chainName}: indexing until block: ${maxBlockToIndexUntil}`);
 
     // Initialize Bridge Contract
     let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
@@ -27,11 +38,6 @@ export async function indexForward(chainConfig) {
         bridgeContractAddress,
         chainConfig.abi,
         w3Provider
-    )
-
-    let maxBlockToIndexUntil = Math.min(
-        indexedLatestBlock,
-        networkLatestBlock + 500
     )
 
     // Get events between these blocks
