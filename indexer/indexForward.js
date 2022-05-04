@@ -2,7 +2,7 @@ import {ethers} from "ethers";
 import {RedisConnection} from "../db/redis.js";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "./processEvents.js";
-import {buildBridgeContract, getW3Provider} from "../config/chainConfig.js";
+import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
 
 export async function indexForward(chainConfig) {
     let chainName = chainConfig.name;
@@ -36,7 +36,7 @@ export async function indexForward(chainConfig) {
     let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
     let bridgeContract = buildBridgeContract(
         bridgeContractAddress,
-        chainConfig.abi,
+        getBridgeContractAbi(),
         w3Provider
     )
 

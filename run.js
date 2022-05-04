@@ -8,22 +8,11 @@ dotenv.config()
 await mongoose.connect(process.env.MONGO_URI).catch((err) => console.log(err));
 console.log('Connected to MongoDB!')
 
-// Indexes latest events
-async function indexChainsForward() {
-    Object.keys(ChainConfig).forEach(chainId => {
-        indexForward(ChainConfig[chainId]);
-    })
-}
-
-// Backfill previous events
-async function indexChainsBackwards() {
-    Object.keys(ChainConfig).forEach(chainId => {
-        indexBackwards(ChainConfig[chainId]);
-    })
-}
-
 let forwardIndexingInterval = 20000; // 20 seconds
-setInterval(indexChainsForward, forwardIndexingInterval)
-
 let backwardIndexingInterval = 200000; // About 3.33 minutes
-setInterval(indexChainsBackwards, backwardIndexingInterval)
+
+// Schedule indexing for all chains inside ChainConfig
+for (let key of Object.keys(ChainConfig)) {
+    setInterval(indexForward, forwardIndexingInterval, ChainConfig[key])
+    setInterval(indexBackwards, backwardIndexingInterval, ChainConfig[key])
+}
