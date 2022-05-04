@@ -11,22 +11,10 @@ const ChainConfig = {
         rpc: process.env.ETH_RPC,
         bridge: "0x2796317b0ff8538f253012862c06787adfb8ceb6",
         startBlock: 13566427,
-        pools: buildPools(ChainId.ETH),
         tokens: buildTokenInfo(ChainId.ETH),
     }
 }
 
-/**
- * Returns stable swap pools for the chain
- * @param chainId
- * @returns {{nETH: string | undefined, nUSD: string | undefined}}
- */
-function buildPools(chainId) {
-    return {
-        'nUSD': SwapPools.stableswapPoolForNetwork(chainId)?.swapAddress,
-        'nETH': SwapPools.ethSwapPoolForNetwork(chainId)?.swapAddress
-    }
-}
 
 /**
  * Returns a list of objects, with the token address on the chain as the key
@@ -105,6 +93,18 @@ function buildBridgeContract(contractAddress, abi, provider) {
 }
 
 /**
+ * Returns stable swap pools for the chain
+ * @param chainId
+ * @returns {{nETH: string | undefined, nUSD: string | undefined}}
+ */
+function getStableSwapPoolForNetwork(chainId) {
+    return {
+        'nUSD': SwapPools.stableswapPoolForNetwork(chainId)?.swapAddress,
+        'nETH': SwapPools.ethSwapPoolForNetwork(chainId)?.swapAddress
+    }
+}
+
+/**
  * Returns ABI for the stable swap pool
  * @returns {Array}
  */
@@ -129,6 +129,7 @@ export {
     getW3Provider,
     buildBridgeContract,
     getTokenContract,
+    getStableSwapPoolForNetwork,
     getBasePoolAbi,
     getBridgeContractAbi,
     getBareERC20Abi,
