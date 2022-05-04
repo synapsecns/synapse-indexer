@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import dotenv  from "dotenv"
 dotenv.config()
 
-await mongoose.connect(process.env.MONGO_URI);
+await mongoose.connect(process.env.MONGO_URI).catch((err) => console.log(err));
 console.log('Connected to MongoDB!')
 
 // Indexes latest events

@@ -4,6 +4,13 @@ import {BigNumber, ethers} from "ethers";
 import {ChainId, Networks, Tokens} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 
+/**
+ * Get name of contract function that emits the event
+ * https://github.com/synapsecns/synapse-contracts/blob/master/contracts/bridge/SynapseBridge.sol
+ *
+ * @param eventName
+ * @return {string|null}
+ */
 function getFunctionForEvent(eventName) {
     switch (eventName) {
         case "TokenWithdrawAndRemove":
@@ -65,6 +72,15 @@ function parseTransferLog(logs, chainConfig) {
     return res;
 }
 
+/**
+ * Returns list of token addresses for coins that form the stableswap pool for a chain
+ *
+ * @param poolAddress
+ * @param chainConfig
+ * @param contract
+ * @param chainId
+ * @return {Promise<*[]>}
+ */
 async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chainId) {
     let poolContract = new ethers.Contract(
         poolAddress,
@@ -86,17 +102,29 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
     return res;
 }
 
-
 /**
- * Pulls out fields from the transaction information
+ * Insert IN/OUT Bridge Txn or update it with the IN/OUT counterpart
+ * Idempotent for transactions with identical kappa and params
  *
- * @param {Object} txn
- * @returns {Object}
+ * @param {String} kappa
+ * @param {Object} args
+ * @return {Promise<Query<any, any, {}, any>|*>}
  */
-function parseTxn(txn) {
-    const fromAddress = txn.from ? txn.from : null;
+async function upsertBridgeTxnInDb(kappa, args) {
+    let filter = {"kappa": kappa};
+    let existingTxn = await BridgeTransaction.findOne(filter);
 
-    return {fromAddress}
+    // Insert new transaction
+    if (!existingTxn) {
+        console.log(`Transaction with kappa ${kappa} not found. Inserting...`)
+        return await new BridgeTransaction(
+            args
+        ).save();
+    }
+
+    // Update existing bridge with args
+    console.log(`Transaction with kappa ${kappa} found. Updating...`)
+    return await BridgeTransaction.findOneAndUpdate(filter, args, {new: true});
 }
 
 export async function processEvents(contract, chainConfig, events) {
@@ -125,7 +153,7 @@ export async function processEvents(contract, chainConfig, events) {
             // Process transaction going out of a chain
             let toChainId = eventLogArgs.chainId.toString()
             let toAddress = eventLogArgs.to
-            let {fromAddress} = parseTxn(txn)
+            let {fromAddress} = txn.from;
             let {sentTokenAddress, sentTokenSymbol, sentValue} = parseTransferLog(
                 txnReceipt.logs,
                 chainConfig
@@ -136,7 +164,7 @@ export async function processEvents(contract, chainConfig, events) {
             );
             const pending = true;
 
-            const transaction = new BridgeTransaction({
+            await upsertBridgeTxnInDb(kappa, {
                 fromTxnHash: txnHash,
                 fromAddress,
                 toAddress,
@@ -149,7 +177,6 @@ export async function processEvents(contract, chainConfig, events) {
                 sentTime: timestamp,
                 pending
             })
-            await transaction.save();
             console.log(`OUT with kappa ${kappa} saved`)
 
         } else {
@@ -254,8 +281,7 @@ export async function processEvents(contract, chainConfig, events) {
                 receivedValue -= data.fee;
             }
 
-            let inBridgeTxn = new BridgeTransaction(
-                {
+            await upsertBridgeTxnInDb(kappa, {
                     toTxnHash: txnHash,
                     toAddress: data.to,
                     receivedValue,
@@ -268,7 +294,7 @@ export async function processEvents(contract, chainConfig, events) {
                     pending: false
                 }
             )
-            await inBridgeTxn.save();
+
             console.log(`IN with kappa ${kappa} saved, received token: ${receivedToken}`)
 
         }
