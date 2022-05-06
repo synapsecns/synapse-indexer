@@ -2,9 +2,12 @@ import {ethers} from "ethers";
 import {RedisConnection} from "../db/redis.js";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "./processEvents.js";
+import {getChainIndexerLogger} from "../utils/loggerUtils.js";
+import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
 
 export async function indexBackward(chainConfig) {
+    let logger = getChainIndexerLogger(chainConfig.name, indexBackward.name)
     let chainName = chainConfig.name;
     let redisClient = await RedisConnection.getClient();
 
@@ -13,7 +16,7 @@ export async function indexBackward(chainConfig) {
         `${chainName}_IS_INDEXING_BACKWARD`
     )
     if (isIndexing === "true") {
-        console.log(`${chainName}: Indexing backward already in progress, skipping call.`)
+        logger.log(`Already in progress, skipping call.`)
         return;
     }
     await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true")
@@ -21,7 +24,7 @@ export async function indexBackward(chainConfig) {
     try {
         let w3Provider = getW3Provider(chainConfig.id, chainConfig.rpc);
 
-        console.log(`${chainName}: Indexing backward for network`)
+        logger.log(`start indexing backward`)
 
         // Get the oldest block indexed
         let oldestBlockIndexed = await redisClient.get(
@@ -42,12 +45,12 @@ export async function indexBackward(chainConfig) {
 
         // Indexing is complete, return
         if (minBlockIndexUntil === startBlock) {
-            console.log(`Backwards indexing complete for chain ${chainName} until block ${startBlock}`);
+            logger.log(`indexing is complete. completed until start block ${startBlock}`);
             return;
         }
 
-        console.log(`${chainName}: oldest block indexed: ${oldestBlockIndexed}`);
-        console.log(`${chainName}: desired indexing until: ${startBlock}`);
+        logger.log(`oldest block indexed: ${oldestBlockIndexed}`);
+        logger.log(`desired indexing until: ${startBlock}`);
 
         // Initialize Bridge Contract
         let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
@@ -68,13 +71,13 @@ export async function indexBackward(chainConfig) {
             minBlockIndexUntil,
             oldestBlockIndexed
         )
-        console.log(`${chainName}: ${filteredEvents.length} older events retrieved, now processing...`)
+        logger.log(`proceeding to process ${filteredEvents.length} retrieved events`)
 
         // Process received events
-        let startTime = Math.floor(Date.now() / 1000)
+        let startTime = getEpochSeconds();
         await processEvents(bridgeContract, chainConfig, filteredEvents)
-        let endTime = Math.floor(Date.now() / 1000)
-        console.log(`Processing old events took ${endTime - startTime} seconds`)
+        let endTime = getEpochSeconds();
+        logger.log(`processing took ${endTime - startTime} seconds`)
 
         // Update the oldest block processed for chain
         await redisClient.set(`${chainName}_OLDEST_BLOCK_INDEXED`, minBlockIndexUntil)
@@ -82,7 +85,7 @@ export async function indexBackward(chainConfig) {
 
         await redisClient.disconnect()
     } catch (err) {
-        console.error(err)
+        logger.error(err)
         await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "false")
     }
 }
