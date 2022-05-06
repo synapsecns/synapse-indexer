@@ -2,12 +2,12 @@ import {ethers} from "ethers";
 import {RedisConnection} from "../db/redis.js";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "./processEvents.js";
-import {getChainIndexerLogger} from "../utils/loggerUtils.js";
+import {getLogger} from "../utils/loggerUtils.js";
 import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
 
 export async function indexBackward(chainConfig) {
-    let logger = getChainIndexerLogger(chainConfig.name, indexBackward.name)
+    let logger = getLogger(`${chainConfig.name}_${indexBackward.name}`)
     let chainName = chainConfig.name;
     let redisClient = await RedisConnection.getClient();
 
@@ -16,7 +16,7 @@ export async function indexBackward(chainConfig) {
         `${chainName}_IS_INDEXING_BACKWARD`
     )
     if (isIndexing === "true") {
-        logger.log(`Already in progress, skipping call.`)
+        logger.debug(`already in progress, skipping interval call.`)
         return;
     }
     await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true")
@@ -37,8 +37,8 @@ export async function indexBackward(chainConfig) {
         // Get the block you wish to index until
         let startBlock = chainConfig.startBlock;
 
-        // Backwards in blocks onf 500
-        let minBlockIndexUntil = Math.min(
+        // Backwards in blocks of 500
+        let minBlockIndexUntil = Math.max(
             startBlock,
             oldestBlockIndexed - 500
         )
@@ -71,7 +71,6 @@ export async function indexBackward(chainConfig) {
             minBlockIndexUntil,
             oldestBlockIndexed
         )
-        logger.log(`proceeding to process ${filteredEvents.length} retrieved events`)
 
         // Process received events
         let startTime = getEpochSeconds();

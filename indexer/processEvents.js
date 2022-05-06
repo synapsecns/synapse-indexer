@@ -3,7 +3,8 @@ import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, ethers} from "ethers";
 import {ChainId, Networks, Tokens} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
-import {getGenericLogger} from "../utils/loggerUtils.js";
+import {getLogger} from "../utils/loggerUtils.js";
+let logger = getLogger(processEvents.name);
 
 /**
  * Get name of contract function that emits the event
@@ -50,7 +51,7 @@ function getEventLogArgs(contractInterface, logs) {
 function parseTransferLog(logs, chainConfig) {
     // Find log for the Transfer() event
     // Address is token contract address, e.i tokenSent
-    let logger = getGenericLogger('processEvents');
+    let logger = getLogger('processEvents');
 
     let res = {};
     for (let log of logs) {
@@ -131,6 +132,8 @@ async function upsertBridgeTxnInDb(kappa, args) {
 }
 
 export async function processEvents(contract, chainConfig, events) {
+    logger.log(`proceeding to process ${events.length} retrieved events`)
+
     for (let event of events) {
 
         const txnHash = event.transactionHash;
