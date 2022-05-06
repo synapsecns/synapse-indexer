@@ -3,6 +3,8 @@ import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, ethers} from "ethers";
 import {ChainId, Networks, Tokens} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
+import {getLogger} from "../utils/loggerUtils.js";
+let logger = getLogger(processEvents.name);
 
 /**
  * Get name of contract function that emits the event
@@ -49,6 +51,8 @@ function getEventLogArgs(contractInterface, logs) {
 function parseTransferLog(logs, chainConfig) {
     // Find log for the Transfer() event
     // Address is token contract address, e.i tokenSent
+    let logger = getLogger('processEvents');
+
     let res = {};
     for (let log of logs) {
         if (Object.keys(chainConfig.tokens).includes(log.address)) {
@@ -61,7 +65,7 @@ function parseTransferLog(logs, chainConfig) {
                 try {
                     sentValue = getTokenContract(chainConfig.id, res.sentTokenAddress).interface.parseLog(log).args.value;
                 } catch (e) {
-                    console.error(e)
+                    logger.error(e)
                 }
             }
             res.sentValue = BigNumber.from(sentValue).toString();
@@ -116,18 +120,20 @@ async function upsertBridgeTxnInDb(kappa, args) {
 
     // Insert new transaction
     if (!existingTxn) {
-        console.log(`Transaction with kappa ${kappa} not found. Inserting...`)
+        logger.log(`Transaction with kappa ${kappa} not found. Inserting...`)
         return await new BridgeTransaction(
             args
         ).save();
     }
 
     // Update existing bridge with args
-    console.log(`Transaction with kappa ${kappa} found. Updating...`)
+    logger.log(`Transaction with kappa ${kappa} found. Updating...`)
     return await BridgeTransaction.findOneAndUpdate(filter, args, {new: true});
 }
 
 export async function processEvents(contract, chainConfig, events) {
+    logger.log(`proceeding to process ${events.length} retrieved events`)
+
     for (let event of events) {
 
         const txnHash = event.transactionHash;
@@ -140,7 +146,7 @@ export async function processEvents(contract, chainConfig, events) {
         const eventDirection = eventInfo.direction;
         const eventName = eventInfo.eventName;
 
-        console.log(eventInfo)
+        logger.log(eventInfo)
 
         const txnReceipt = await event.getTransactionReceipt();
         let eventLogArgs = getEventLogArgs(
@@ -177,12 +183,12 @@ export async function processEvents(contract, chainConfig, events) {
                 sentTime: timestamp,
                 pending
             })
-            console.log(`OUT with kappa ${kappa} saved`)
+            logger.log(`OUT with kappa ${kappa} saved`)
 
         } else {
             let kappa = eventLogArgs.kappa;
 
-            console.log("IN with kappa", kappa)
+            logger.log("IN with kappa", kappa)
 
             let receivedValue = null;
             let receivedToken = null;
@@ -235,7 +241,7 @@ export async function processEvents(contract, chainConfig, events) {
                     receivedValue = data.amount - data.fee
                 }
             } else {
-                console.error("In Event not convered")
+                logger.error("In Event not convered")
                 continue;
             }
 
@@ -246,30 +252,30 @@ export async function processEvents(contract, chainConfig, events) {
 
             // TODO: Move to searchLogs function
             if (!receivedValue) {
-                console.log("Searching logs for received value...")
+                logger.log("Searching logs for received value...")
                 let tokenContract = getTokenContract(chainConfig.id, receivedToken)
                 for (let log of txnReceipt.logs) {
-                    console.log(`Comparing ${log.address} and ${receivedToken}`)
+                    logger.log(`Comparing ${log.address} and ${receivedToken}`)
                     if (log.address === receivedToken) {
                         receivedValue = tokenContract.interface.parseLog(log).args.value;
-                        console.log(`Received value parsed is ${receivedValue}`)
+                        logger.log(`Received value parsed is ${receivedValue}`)
                         break;
                     }
                 }
                 if (!receivedValue) {
-                    console.error('Error! Unable to find received value for log')
+                    logger.error('Error! Unable to find received value for log')
                     continue;
                 }
-                console.log(`Received value is ${receivedValue}`);
+                logger.log(`Received value is ${receivedValue}`);
             }
 
             if (eventName === "TokenMint") {
                 if (receivedValue !== data.amount) {
-                    console.log(`Event is TokenMint, received value is ${receivedValue} and amount is ${data.amount}`)
+                    logger.log(`Event is TokenMint, received value is ${receivedValue} and amount is ${data.amount}`)
                     for (let log of txnReceipt.logs) {
                         receivedValue = BigNumber.from(log.data);
                         receivedToken =  log.address;
-                        console.log(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
+                        logger.log(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
                         if (data.amount.gt(receivedValue)) {
                             break;
                         }
@@ -295,7 +301,7 @@ export async function processEvents(contract, chainConfig, events) {
                 }
             )
 
-            console.log(`IN with kappa ${kappa} saved, received token: ${receivedToken}`)
+            logger.log(`IN with kappa ${kappa} saved, received token: ${receivedToken}`)
 
         }
     }

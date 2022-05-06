@@ -2,9 +2,12 @@ import {ethers} from "ethers";
 import {RedisConnection} from "../db/redis.js";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "./processEvents.js";
+import {getLogger} from "../utils/loggerUtils.js";
+import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
 
 export async function indexForward(chainConfig) {
+    let logger = getLogger(`${chainConfig.name}_${indexForward.name}`)
     let chainName = chainConfig.name;
     let redisClient = await RedisConnection.getClient();
 
@@ -13,14 +16,14 @@ export async function indexForward(chainConfig) {
         `${chainName}_IS_INDEXING_FORWARD`
     )
     if (isIndexing === "true") {
-        console.log(`${chainName}: Indexing forward already in progress, skipping interval call.`)
+        logger.debug(`already in progress, skipping interval call.`)
         return;
     }
     await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true")
 
     try {
         let w3Provider = getW3Provider(chainConfig.id, chainConfig.rpc);
-        console.log(`${chainName}: Indexing forward for network`)
+        logger.log(`start indexing forward`)
 
         // Get block intervals to get events between
         let networkLatestBlock = await w3Provider.getBlockNumber();
@@ -30,7 +33,9 @@ export async function indexForward(chainConfig) {
         indexedLatestBlock = (indexedLatestBlock) ? parseInt(indexedLatestBlock) : networkLatestBlock;
 
         if (indexedLatestBlock === networkLatestBlock) {
-            console.log(`Already forward indexed until block ${indexedLatestBlock} for chain ${chainName}`);
+            logger.log(`forward indexing is up to date with latest network block ${indexedLatestBlock}`);
+            await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")
+            return;
         }
 
         // We forward upto 500 blocks ahead to account for service downtime and restart
@@ -39,9 +44,9 @@ export async function indexForward(chainConfig) {
             indexedLatestBlock + 500
         )
 
-        console.log(`${chainName}: network latest block: ${networkLatestBlock}`);
-        console.log(`${chainName}: indexed latest block: ${indexedLatestBlock}`);
-        console.log(`${chainName}: indexing until block: ${maxBlockToIndexUntil}`);
+        logger.log(`network latest block: ${networkLatestBlock}`);
+        logger.log(`indexed latest block: ${indexedLatestBlock}`);
+        logger.log(`indexing until block: ${maxBlockToIndexUntil}`);
 
         // Initialize Bridge Contract
         let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
@@ -62,13 +67,12 @@ export async function indexForward(chainConfig) {
             indexedLatestBlock,
             maxBlockToIndexUntil
         )
-        console.log(`${chainName}: ${filteredEvents.length} latest events retrieved, now processing...`)
 
         // Process received events
-        let startTime = Math.floor(Date.now() / 1000)
+        let startTime = getEpochSeconds();
         await processEvents(bridgeContract, chainConfig, filteredEvents)
-        let endTime = Math.floor(Date.now() / 1000)
-        console.log(`Processing took ${endTime - startTime} seconds`)
+        let endTime = getEpochSeconds();
+        logger.log(`processing took ${endTime - startTime} seconds`)
 
         // Update the latest block processed for chain
         await redisClient.set(`${chainName}_LATEST_BLOCK_INDEXED`, maxBlockToIndexUntil)
@@ -76,7 +80,7 @@ export async function indexForward(chainConfig) {
 
         await redisClient.disconnect()
     } catch (err) {
-        console.error(err);
+        logger.error(err);
         await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")
     }
 }
