@@ -1,7 +1,7 @@
-import {Topics, getEventForTopic, getTopicsHash} from "../config/topics.js";
+import {getEventForTopic, getTopicsHash} from "../config/topics.js";
 import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, ethers} from "ethers";
-import {ChainId, Networks, Tokens} from "@synapseprotocol/sdk";
+import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getLogger} from "../utils/loggerUtils.js";
 let logger = getLogger(processEvents.name);
@@ -146,7 +146,7 @@ export async function processEvents(contract, chainConfig, events) {
         const eventDirection = eventInfo.direction;
         const eventName = eventInfo.eventName;
 
-        logger.log(eventInfo)
+        logger.trace(eventInfo)
 
         const txnReceipt = await event.getTransactionReceipt();
         let eventLogArgs = getEventLogArgs(
@@ -252,13 +252,13 @@ export async function processEvents(contract, chainConfig, events) {
 
             // TODO: Move to searchLogs function
             if (!receivedValue) {
-                logger.log("Searching logs for received value...")
+                logger.debug("Searching logs for received value...")
                 let tokenContract = getTokenContract(chainConfig.id, receivedToken)
                 for (let log of txnReceipt.logs) {
-                    logger.log(`Comparing ${log.address} and ${receivedToken}`)
+                    logger.debug(`Comparing ${log.address} and ${receivedToken}`)
                     if (log.address === receivedToken) {
                         receivedValue = tokenContract.interface.parseLog(log).args.value;
-                        logger.log(`Received value parsed is ${receivedValue}`)
+                        logger.debug(`Received value parsed is ${receivedValue}`)
                         break;
                     }
                 }
@@ -266,16 +266,16 @@ export async function processEvents(contract, chainConfig, events) {
                     logger.error('Error! Unable to find received value for log')
                     continue;
                 }
-                logger.log(`Received value is ${receivedValue}`);
+                logger.debug(`Received value is ${receivedValue}`);
             }
 
             if (eventName === "TokenMint") {
                 if (receivedValue !== data.amount) {
-                    logger.log(`Event is TokenMint, received value is ${receivedValue} and amount is ${data.amount}`)
+                    logger.debug(`Event is TokenMint, received value is ${receivedValue} and amount is ${data.amount}`)
                     for (let log of txnReceipt.logs) {
                         receivedValue = BigNumber.from(log.data);
                         receivedToken =  log.address;
-                        logger.log(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
+                        logger.debug(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
                         if (data.amount.gt(receivedValue)) {
                             break;
                         }
