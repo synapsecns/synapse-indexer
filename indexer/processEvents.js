@@ -189,12 +189,12 @@ export async function processEvents(contract, chainConfig, events) {
                 sentTime: timestamp,
                 pending
             })
-            logger.info(`OUT with kappa ${kappa} saved`)
+            logger.info(`OUT with kappa ${kappa} txnHash ${txnHash} saved`)
 
         } else {
             let kappa = eventLogArgs.kappa;
 
-            logger.log(`IN with kappa ${kappa} and event ${eventName}`)
+            logger.log(`IN with kappa ${kappa} event ${eventName} txnHash ${txnHash}`)
 
             let receivedValue = null;
             let receivedToken = null;
@@ -275,13 +275,17 @@ export async function processEvents(contract, chainConfig, events) {
                         if (log.address === receivedToken) {
                             let logArgs = tokenContract.interface.parseLog(log).args
                             logger.debug(`log args after parsing for received value are ${JSON.stringify(logArgs)}`)
-                            receivedValue = logArgs.value ? logArgs.value : (logArgs.amount ? logArgs.amount : null);
+                            if (logArgs.value) {
+                                receivedValue = logArgs.value
+                            } else if (logArgs.amount) {
+                                receivedValue = logArgs.amount
+                            }
                             logger.debug(`received value parsed is ${receivedValue}`)
                             break;
                         }
                     }
                 } catch (err) {
-                    logger.error(`Unable to find received value for transaction with kappa ${kappa} and txn hash ${txnHash}`)
+                    logger.error(`${err}`)
                 }
 
                 if (!receivedValue) {

@@ -21,12 +21,12 @@ export async function indexForward(chainConfig) {
     }
 
     // Release lock in about 20 seconds
-    await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', 20, () => {
-        logger.warn(`lock released for ${chainName} forward indexing, error likely`)
+    await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", {
+        'EX': 20
     })
 
     try {
-        let w3Provider = getW3Provider(chainConfig.id, chainConfig.rpc);
+        let w3Provider = getW3Provider(chainConfig.id);
         logger.log(`start indexing forward`)
 
         // Get block intervals to get events between

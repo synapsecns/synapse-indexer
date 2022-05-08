@@ -5,18 +5,11 @@ let _w3_PROVIDER_CACHE = {}
 let _TOKEN_CONTRACT_CACHE = {}
 
 const ChainConfig = {
-    [ChainId.ETH] : {
-        id: ChainId.ETH,
-        name: Networks.ETH.name,
-        rpc: '',
-        bridge: "0x2796317b0ff8538f253012862c06787adfb8ceb6",
-        startBlock: 13566427,
-        tokens: buildTokenInfo(ChainId.ETH),
-    },
+
     [ChainId.BSC] : {
         id: ChainId.BSC,
         name: Networks.BSC.name,
-        rpc: 'https://bsc-dataseed.binance.org/',
+        rpc: () => (process.env.BSC_RPC),
         bridge: "0xd123f70ae324d34a9e76b67a27bf77593ba8749f",
         startBlock: 12431591,
         tokens: buildTokenInfo(ChainId.BSC),
@@ -58,7 +51,7 @@ function getW3Provider(chainId) {
     if (chainId in _w3_PROVIDER_CACHE) {
         return _w3_PROVIDER_CACHE[chainId]
     }
-    return _w3_PROVIDER_CACHE[chainId] = new ethers.providers.JsonRpcProvider(ChainConfig[chainId].rpc);
+    return _w3_PROVIDER_CACHE[chainId] = new ethers.providers.JsonRpcProvider(ChainConfig[chainId].rpc());
 }
 
 /**

@@ -21,12 +21,12 @@ export async function indexBackward(chainConfig) {
     }
 
     // Release lock in about 200 seconds
-    await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true", 'EX', 200, () => {
-        logger.warn(`lock released for ${chainName} backward indexing, error likely`)
+    await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true", {
+        'EX': 200
     })
 
     try {
-        let w3Provider = getW3Provider(chainConfig.id, chainConfig.rpc);
+        let w3Provider = getW3Provider(chainConfig.id);
 
         logger.log(`start indexing backward`)
 
