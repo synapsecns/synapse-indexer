@@ -3,7 +3,7 @@ import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
-import {getLogger} from "../utils/loggerUtils.js";
+import {getIndexerLogger} from "../utils/loggerUtils.js";
 
 import log from "loglevel";
 import prefix from "loglevel-plugin-prefix";
@@ -136,7 +136,7 @@ async function upsertBridgeTxnInDb(kappa, args) {
 }
 
 export async function processEvents(contract, chainConfig, events) {
-    logger = getLogger(`processEvents_${chainConfig.name}`);
+    logger = getIndexerLogger(`processEvents_${chainConfig.name}`);
 
     logger.log(`proceeding to process ${events.length} retrieved events`)
 

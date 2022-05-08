@@ -1,7 +1,8 @@
 import log from 'loglevel';
 import prefix from "loglevel-plugin-prefix"
 
-export function getLogger(loggerName) {
+export function getIndexerLogger(loggerName) {
+    prefix.reg(log);
     let logger = log.getLogger(loggerName);
     logger.setLevel('debug')
     prefix.apply(logger, {

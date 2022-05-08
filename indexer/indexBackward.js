@@ -2,12 +2,12 @@ import {ethers} from "ethers";
 import {RedisConnection} from "../db/redis.js";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "./processEvents.js";
-import {getLogger} from "../utils/loggerUtils.js";
+import {getIndexerLogger} from "../utils/loggerUtils.js";
 import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
 
 export async function indexBackward(chainConfig) {
-    let logger = getLogger(`${chainConfig.name}_${indexBackward.name}`)
+    let logger = getIndexerLogger(`${chainConfig.name}_${indexBackward.name}`)
     let chainName = chainConfig.name;
     let redisClient = await RedisConnection.getClient();
 

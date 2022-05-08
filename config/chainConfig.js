@@ -1,11 +1,21 @@
 import {ChainId, Networks, SwapPools} from "@synapseprotocol/sdk"
 import {ethers} from "ethers";
+import {getIndexerLogger} from "../utils/loggerUtils.js";
+
+let logger = getIndexerLogger('chainConfig');
 
 let _w3_PROVIDER_CACHE = {}
 let _TOKEN_CONTRACT_CACHE = {}
 
 const ChainConfig = {
-
+    [ChainId.ETH] : {
+        id: ChainId.ETH,
+        name: Networks.ETH.name,
+        rpc: () => (process.env.ETH_RPC),
+        bridge: "0x2796317b0ff8538f253012862c06787adfb8ceb6",
+        startBlock: 13566427,
+        tokens: buildTokenInfo(ChainId.ETH),
+    },
     [ChainId.BSC] : {
         id: ChainId.BSC,
         name: Networks.BSC.name,
@@ -49,7 +59,11 @@ function buildTokenInfo(chainId) {
  */
 function getW3Provider(chainId) {
     if (chainId in _w3_PROVIDER_CACHE) {
-        return _w3_PROVIDER_CACHE[chainId]
+        let provider = _w3_PROVIDER_CACHE[chainId]
+        provider.detectNetwork().then((res) => {
+            logger.debug(`network provider being returned is for ${chainId} being returned is ${JSON.stringify(res)}`)
+        })
+        return provider
     }
     return _w3_PROVIDER_CACHE[chainId] = new ethers.providers.JsonRpcProvider(ChainConfig[chainId].rpc());
 }
