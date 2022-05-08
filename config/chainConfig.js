@@ -8,10 +8,18 @@ const ChainConfig = {
     [ChainId.ETH] : {
         id: ChainId.ETH,
         name: Networks.ETH.name,
-        rpc: process.env.ETH_RPC,
+        rpc: '',
         bridge: "0x2796317b0ff8538f253012862c06787adfb8ceb6",
         startBlock: 13566427,
         tokens: buildTokenInfo(ChainId.ETH),
+    },
+    [ChainId.BSC] : {
+        id: ChainId.BSC,
+        name: Networks.BSC.name,
+        rpc: 'https://bsc-dataseed.binance.org/',
+        bridge: "0xd123f70ae324d34a9e76b67a27bf77593ba8749f",
+        startBlock: 12431591,
+        tokens: buildTokenInfo(ChainId.BSC),
     }
 }
 
@@ -50,7 +58,7 @@ function getW3Provider(chainId) {
     if (chainId in _w3_PROVIDER_CACHE) {
         return _w3_PROVIDER_CACHE[chainId]
     }
-    return _w3_PROVIDER_CACHE[chainId] = ethers.getDefaultProvider(ChainConfig[chainId].rpc);
+    return _w3_PROVIDER_CACHE[chainId] = new ethers.providers.JsonRpcProvider(ChainConfig[chainId].rpc);
 }
 
 /**
@@ -66,7 +74,7 @@ function getTokenContract(chainId, tokenAddress) {
     if (!_TOKEN_CONTRACT_CACHE[chainId]) {
         _TOKEN_CONTRACT_CACHE[chainId] = {}
     }
-    console.log(`Getting token contract for ${tokenAddress} on ${chainId}`);
+    console.debug(`Getting token contract for ${tokenAddress} on ${chainId}`);
 
     _TOKEN_CONTRACT_CACHE[chainId][tokenAddress] = new ethers.Contract(
         tokenAddress,

@@ -4,7 +4,12 @@ import {BigNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getLogger} from "../utils/loggerUtils.js";
-let logger = getLogger(processEvents.name);
+
+import log from "loglevel";
+import prefix from "loglevel-plugin-prefix";
+prefix.reg(log);
+
+let logger;
 
 /**
  * Get name of contract function that emits the event
@@ -51,7 +56,6 @@ function getEventLogArgs(contractInterface, logs) {
 function parseTransferLog(logs, chainConfig) {
     // Find log for the Transfer() event
     // Address is token contract address, e.i tokenSent
-    let logger = getLogger('processEvents');
 
     let res = {};
     for (let log of logs) {
@@ -132,6 +136,8 @@ async function upsertBridgeTxnInDb(kappa, args) {
 }
 
 export async function processEvents(contract, chainConfig, events) {
+    logger = getLogger(`processEvents_${chainConfig.name}`);
+
     logger.log(`proceeding to process ${events.length} retrieved events`)
 
     for (let event of events) {
@@ -183,12 +189,12 @@ export async function processEvents(contract, chainConfig, events) {
                 sentTime: timestamp,
                 pending
             })
-            logger.log(`OUT with kappa ${kappa} saved`)
+            logger.info(`OUT with kappa ${kappa} saved`)
 
         } else {
             let kappa = eventLogArgs.kappa;
 
-            logger.log("IN with kappa", kappa)
+            logger.log(`IN with kappa ${kappa} and event ${eventName}`)
 
             let receivedValue = null;
             let receivedToken = null;
@@ -206,6 +212,7 @@ export async function processEvents(contract, chainConfig, events) {
                     contract,
                     chainConfig.id
                 )
+                logger.debug(`Swap pool is ${swapPoolAddresses}`)
 
                 // Build out data from event log args
                 data = {
@@ -218,7 +225,14 @@ export async function processEvents(contract, chainConfig, events) {
 
                 // Determine received token
                 if (data.swapSuccess) {
-                    receivedToken = swapPoolAddresses[data.tokenIndexTo]
+                    if (data.tokenIndexTo) {
+                        receivedToken = swapPoolAddresses[data.tokenIndexTo]
+                    } else if (data.token) {
+                        receivedToken = data.token
+                    } else {
+                        logger.error(`Could not find received token for txn with kappa ${kappa}. Data is ${JSON.stringify(data)}`)
+                        continue;
+                    }
                 } else if (chainConfig.id === ChainId.ETH) {
                     // nUSD (eth) - nexus assets are not in eth pools.
                     receivedToken = '0x1b84765de8b7566e4ceaf4d0fd3c5af52d3dde4f'
@@ -226,6 +240,7 @@ export async function processEvents(contract, chainConfig, events) {
                     receivedToken = swapPoolAddresses[0];
                 }
                 swapSuccess = data.swapSuccess;
+                logger.debug("Received token is ", receivedToken);
 
             } else if (eventName === "TokenWithdraw" || eventName ==="TokenMint") {
                 data = {
@@ -254,16 +269,23 @@ export async function processEvents(contract, chainConfig, events) {
             if (!receivedValue) {
                 logger.debug("Searching logs for received value...")
                 let tokenContract = getTokenContract(chainConfig.id, receivedToken)
-                for (let log of txnReceipt.logs) {
-                    logger.debug(`Comparing ${log.address} and ${receivedToken}`)
-                    if (log.address === receivedToken) {
-                        receivedValue = tokenContract.interface.parseLog(log).args.value;
-                        logger.debug(`Received value parsed is ${receivedValue}`)
-                        break;
+                try {
+                    for (let log of txnReceipt.logs) {
+                        logger.debug(`Comparing ${log.address} and ${receivedToken}`)
+                        if (log.address === receivedToken) {
+                            let logArgs = tokenContract.interface.parseLog(log).args
+                            logger.debug(`log args after parsing for received value are ${JSON.stringify(logArgs)}`)
+                            receivedValue = logArgs.value ? logArgs.value : (logArgs.amount ? logArgs.amount : null);
+                            logger.debug(`received value parsed is ${receivedValue}`)
+                            break;
+                        }
                     }
+                } catch (err) {
+                    logger.error(`Unable to find received value for transaction with kappa ${kappa} and txn hash ${txnHash}`)
                 }
+
                 if (!receivedValue) {
-                    logger.error('Error! Unable to find received value for log')
+                    logger.error(`Error! Unable to find received value for log, txn hash ${txnHash}`)
                     continue;
                 }
                 logger.debug(`Received value is ${receivedValue}`);
@@ -301,7 +323,7 @@ export async function processEvents(contract, chainConfig, events) {
                 }
             )
 
-            logger.log(`IN with kappa ${kappa} saved, received token: ${receivedToken}`)
+            logger.info(`IN with kappa ${kappa} saved`)
 
         }
     }

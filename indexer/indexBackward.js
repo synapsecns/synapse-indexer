@@ -19,7 +19,11 @@ export async function indexBackward(chainConfig) {
         logger.debug(`already in progress, skipping interval call.`)
         return;
     }
-    await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true")
+
+    // Release lock in about 200 seconds
+    await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true", 'EX', 200, () => {
+        logger.warn(`lock released for ${chainName} backward indexing, error likely`)
+    })
 
     try {
         let w3Provider = getW3Provider(chainConfig.id, chainConfig.rpc);
@@ -30,9 +34,8 @@ export async function indexBackward(chainConfig) {
         let oldestBlockIndexed = await redisClient.get(
             `${chainName}_OLDEST_BLOCK_INDEXED`
         )
-        if (!oldestBlockIndexed) {
-            oldestBlockIndexed = await w3Provider.getBlockNumber();
-        }
+        oldestBlockIndexed = oldestBlockIndexed ?
+            parseInt(oldestBlockIndexed) : await w3Provider.getBlockNumber();
 
         // Get the block you wish to index until
         let startBlock = chainConfig.startBlock;
@@ -43,14 +46,15 @@ export async function indexBackward(chainConfig) {
             oldestBlockIndexed - 500
         )
 
+        logger.log(`oldest block indexed: ${oldestBlockIndexed}`);
+        logger.log(`indexing until: ${minBlockIndexUntil}`);
+        logger.log(`desired indexing until: ${startBlock}`);
+
         // Indexing is complete, return
         if (minBlockIndexUntil === startBlock) {
             logger.log(`indexing is complete. completed until start block ${startBlock}`);
             return;
         }
-
-        logger.log(`oldest block indexed: ${oldestBlockIndexed}`);
-        logger.log(`desired indexing until: ${startBlock}`);
 
         // Initialize Bridge Contract
         let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
