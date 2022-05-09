@@ -1,14 +1,9 @@
 import dotenv  from "dotenv"
 dotenv.config()
 
-import log from 'loglevel';
-import prefix from "loglevel-plugin-prefix";
-prefix.reg(log);
-log.enableAll();
-
 import mongoose from "mongoose";
-await mongoose.connect(process.env.MONGO_URI).catch((err) => log.error(err));
-log.debug('Connected to MongoDB!')
+await mongoose.connect(process.env.MONGO_URI).catch((err) => console.error(err));
+console.log('Connected to MongoDB!')
 
 import {RedisConnection} from "./db/redis.js";
 let redisClient = await RedisConnection.getClient();

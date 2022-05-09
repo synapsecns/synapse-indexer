@@ -27,7 +27,7 @@ export async function indexForward(chainConfig) {
 
     try {
         let w3Provider = getW3Provider(chainConfig.id);
-        logger.log(`start indexing forward`)
+        logger.debug(`start indexing forward`)
 
         // Get block intervals to get events between
         let networkLatestBlock = await w3Provider.getBlockNumber();
@@ -37,7 +37,7 @@ export async function indexForward(chainConfig) {
         indexedLatestBlock = (indexedLatestBlock) ? parseInt(indexedLatestBlock) : networkLatestBlock;
 
         if (indexedLatestBlock === networkLatestBlock) {
-            logger.log(`forward indexing is up to date with latest network block ${indexedLatestBlock}`);
+            logger.debug(`forward indexing is up to date with latest network block ${indexedLatestBlock}`);
             await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")
             return;
         }
@@ -48,9 +48,9 @@ export async function indexForward(chainConfig) {
             indexedLatestBlock + 500
         )
 
-        logger.log(`network latest block: ${networkLatestBlock}`);
-        logger.log(`indexed latest block: ${indexedLatestBlock}`);
-        logger.log(`indexing until block: ${maxBlockToIndexUntil}`);
+        logger.debug(`network latest block: ${networkLatestBlock}`);
+        logger.debug(`indexed latest block: ${indexedLatestBlock}`);
+        logger.debug(`indexing until block: ${maxBlockToIndexUntil}`);
 
         // Initialize Bridge Contract
         let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
@@ -76,7 +76,7 @@ export async function indexForward(chainConfig) {
         let startTime = getEpochSeconds();
         await processEvents(bridgeContract, chainConfig, filteredEvents)
         let endTime = getEpochSeconds();
-        logger.log(`processing took ${endTime - startTime} seconds`)
+        logger.debug(`processing took ${endTime - startTime} seconds`)
 
         // Update the latest block processed for chain
         await redisClient.set(`${chainName}_LATEST_BLOCK_INDEXED`, maxBlockToIndexUntil)

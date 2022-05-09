@@ -5,12 +5,6 @@ import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
 
-import log from "loglevel";
-import prefix from "loglevel-plugin-prefix";
-prefix.reg(log);
-
-let logger;
-
 /**
  * Get name of contract function that emits the event
  * https://github.com/synapsecns/synapse-contracts/blob/master/contracts/bridge/SynapseBridge.sol
@@ -51,9 +45,10 @@ function getEventLogArgs(contractInterface, logs) {
  *
  * @param {Array<Object>} logs
  * @param {Object} chainConfig
+ * @param {Object} logger
  * @returns {Object}
  */
-function parseTransferLog(logs, chainConfig) {
+function parseTransferLog(logs, chainConfig, logger) {
     // Find log for the Transfer() event
     // Address is token contract address, e.i tokenSent
 
@@ -116,29 +111,30 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
  *
  * @param {String} kappa
  * @param {Object} args
+ * @param {Object} logger
  * @return {Promise<Query<any, any, {}, any>|*>}
  */
-async function upsertBridgeTxnInDb(kappa, args) {
+async function upsertBridgeTxnInDb(kappa, args, logger) {
     let filter = {"kappa": kappa};
     let existingTxn = await BridgeTransaction.findOne(filter);
 
     // Insert new transaction
     if (!existingTxn) {
-        logger.log(`Transaction with kappa ${kappa} not found. Inserting...`)
+        logger.debug(`Transaction with kappa ${kappa} not found. Inserting...`)
         return await new BridgeTransaction(
             args
         ).save();
     }
 
     // Update existing bridge with args
-    logger.log(`Transaction with kappa ${kappa} found. Updating...`)
+    logger.debug(`Transaction with kappa ${kappa} found. Updating...`)
     return await BridgeTransaction.findOneAndUpdate(filter, args, {new: true});
 }
 
 export async function processEvents(contract, chainConfig, events) {
-    logger = getIndexerLogger(`processEvents_${chainConfig.name}`);
+    let logger = getIndexerLogger(`processEvents_${chainConfig.name}`);
 
-    logger.log(`proceeding to process ${events.length} retrieved events`)
+    logger.debug(`proceeding to process ${events.length} retrieved events`)
 
     for (let event of events) {
 
@@ -152,7 +148,7 @@ export async function processEvents(contract, chainConfig, events) {
         const eventDirection = eventInfo.direction;
         const eventName = eventInfo.eventName;
 
-        logger.trace(eventInfo)
+        logger.debug(eventInfo)
 
         const txnReceipt = await event.getTransactionReceipt();
         let eventLogArgs = getEventLogArgs(
@@ -168,7 +164,8 @@ export async function processEvents(contract, chainConfig, events) {
             let {fromAddress} = txn.from;
             let {sentTokenAddress, sentTokenSymbol, sentValue} = parseTransferLog(
                 txnReceipt.logs,
-                chainConfig
+                chainConfig,
+                logger
             );
             const fromChainId = chainConfig.id;
             const kappa = ethers.utils.keccak256(
@@ -188,13 +185,14 @@ export async function processEvents(contract, chainConfig, events) {
                 kappa,
                 sentTime: timestamp,
                 pending
-            })
+            }, logger)
+
             logger.info(`OUT with kappa ${kappa} txnHash ${txnHash} saved`)
 
         } else {
             let kappa = eventLogArgs.kappa;
 
-            logger.log(`IN with kappa ${kappa} event ${eventName} txnHash ${txnHash}`)
+            logger.debug(`IN with kappa ${kappa} event ${eventName} txnHash ${txnHash}`)
 
             let receivedValue = null;
             let receivedToken = null;
@@ -324,7 +322,8 @@ export async function processEvents(contract, chainConfig, events) {
                     receivedTime: timestamp,
                     toChainId: chainConfig.id,
                     pending: false
-                }
+                },
+                logger
             )
 
             logger.info(`IN with kappa ${kappa} saved`)
