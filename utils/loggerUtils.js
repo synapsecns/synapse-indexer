@@ -10,13 +10,13 @@ export function getIndexerLogger(loggerName) {
 
     let transportOptions = [];
     // Datadog logging
-    if (process.env.PROD) {
+    if (process.env.DD_LOGGING_ENABLE) {
         const httpTransportOptions = {
             host: 'http-intake.logs.datadoghq.com',
             path: `/api/v2/logs?dd-api-key=${process.env.DD_API_KEY}&ddsource=nodejs&service=${process.env.DD_APP_NAME}`,
             ssl: true
         };
-        transportOptions.push(httpTransportOptions)
+        transportOptions.push(new transports.Http(httpTransportOptions))
     }
     transportOptions.push(new transports.Console());
 
