@@ -121,6 +121,8 @@ async function upsertBridgeTxnInDb(kappa, args, logger) {
     // Insert new transaction
     if (!existingTxn) {
         logger.debug(`Transaction with kappa ${kappa} not found. Inserting...`)
+        // TODO: add additional checks!
+        args.pending = false
         return await new BridgeTransaction(
             args
         ).save();
