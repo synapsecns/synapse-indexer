@@ -36,11 +36,12 @@ export async function indexForward(chainConfig) {
         )
         indexedLatestBlock = (indexedLatestBlock) ? parseInt(indexedLatestBlock) : networkLatestBlock;
 
-        if (indexedLatestBlock === networkLatestBlock) {
-            logger.debug(`forward indexing is up to date with latest network block ${indexedLatestBlock}`);
-            await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")
-            return;
-        }
+        // TODO: Fix
+        // if (indexedLatestBlock === networkLatestBlock) {
+        //     logger.debug(`forward indexing is up to date with latest network block ${indexedLatestBlock}`);
+        //     await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")
+        //     return;
+        // }
 
         // We forward upto 500 blocks ahead to account for service downtime and restart
         let maxBlockToIndexUntil = Math.min(
