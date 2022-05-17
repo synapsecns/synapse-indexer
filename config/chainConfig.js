@@ -23,7 +23,47 @@ const ChainConfig = {
         bridge: "0xd123f70ae324d34a9e76b67a27bf77593ba8749f",
         startBlock: 12431591,
         tokens: buildTokenInfo(ChainId.BSC),
-    }
+    },
+    [ChainId.ARBITRUM] : {
+        id: ChainId.ARBITRUM,
+        name: Networks.ARBITRUM.name,
+        rpc: () => (process.env.ARB_RPC),
+        bridge: "0x6f4e8eba4d337f874ab57478acc2cb5bacdc19c9",
+        startBlock: 2876718,
+        tokens: buildTokenInfo(ChainId.ARBITRUM),
+    },
+    [ChainId.AVALANCHE] : {
+        id: ChainId.AVALANCHE,
+        name: Networks.AVALANCHE.name,
+        rpc: () => (process.env.AVAX_RPC),
+        bridge: "0xc05e61d0e7a63d27546389b7ad62fdff5a91aace",
+        startBlock: 6619002,
+        tokens: buildTokenInfo(ChainId.AVALANCHE),
+    },
+    [ChainId.POLYGON] : {
+        id: ChainId.POLYGON,
+        name: Networks.POLYGON.name,
+        rpc: () => (process.env.POLYGON_RPC),
+        bridge: "0x8f5bbb2bb8c2ee94639e55d5f41de9b4839c1280",
+        startBlock: 21071348,
+        tokens: buildTokenInfo(ChainId.POLYGON),
+    },
+    [ChainId.FANTOM] : {
+        id: ChainId.FANTOM,
+        name: Networks.FANTOM.name,
+        rpc: () => (process.env.FTM_RPC),
+        bridge: "0xaf41a65f786339e7911f4acdad6bd49426f2dc6b",
+        startBlock: 21297076,
+        tokens: buildTokenInfo(ChainId.FANTOM),
+    },
+    [ChainId.HARMONY] : {
+        id: ChainId.HARMONY,
+        name: Networks.HARMONY.name,
+        rpc: () => (process.env.HARMONY_RPC),
+        bridge: "0xaf41a65f786339e7911f4acdad6bd49426f2dc6b",
+        startBlock: 19163634,
+        tokens: buildTokenInfo(ChainId.HARMONY),
+    },
 }
 
 
