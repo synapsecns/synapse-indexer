@@ -21,9 +21,7 @@ export async function indexForward(chainConfig) {
     }
 
     // Release lock in about 20 seconds
-    await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", {
-        'EX': 20
-    })
+    await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', 20)
 
     try {
         let w3Provider = getW3Provider(chainConfig.id);
@@ -83,7 +81,6 @@ export async function indexForward(chainConfig) {
         await redisClient.set(`${chainName}_LATEST_BLOCK_INDEXED`, maxBlockToIndexUntil)
         await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")
 
-        await redisClient.disconnect()
     } catch (err) {
         logger.error(err);
         await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "false")

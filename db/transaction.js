@@ -1,6 +1,5 @@
 import mongoose from 'mongoose'
 
-
 /**
  * Mongoose schema for transaction
  */

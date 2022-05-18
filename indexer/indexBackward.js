@@ -22,9 +22,7 @@ export async function indexBackward(chainConfig) {
     }
 
     // Release lock in about 200 seconds
-    await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true", {
-        'EX': 200
-    })
+    await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "true", 'EX', 200)
 
     try {
         let w3Provider = getW3Provider(chainConfig.id);
@@ -87,7 +85,6 @@ export async function indexBackward(chainConfig) {
         await redisClient.set(`${chainName}_OLDEST_BLOCK_INDEXED`, minBlockIndexUntil)
         await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "false")
 
-        await redisClient.disconnect()
     } catch (err) {
         logger.error(err)
         await redisClient.set(`${chainName}_IS_INDEXING_BACKWARD`, "false")

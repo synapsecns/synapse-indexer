@@ -23,4 +23,3 @@ for (let key of Object.keys(ChainConfig)) {
     setInterval(indexForward, indexingInterval, ChainConfig[key])
     setInterval(indexBackward, indexingInterval, ChainConfig[key])
 }
-await redisClient.disconnect()

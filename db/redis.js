@@ -1,12 +1,13 @@
-import redis from "redis"
+import Redis from "ioredis"
 
 export class RedisConnection {
-    // TODO: Cache
+    _CLIENT
+
     static async getClient() {
-        const client = redis.createClient({
-            url: process.env.REDIS_URI
-        });
-        await client.connect()
-        return client;
+        if (!RedisConnection._CLIENT) {
+            RedisConnection._CLIENT = new Redis("redis://localhost:6379");
+        }
+        // while (RedisConnection._CLIENT.status !== 'ready'){}
+        return RedisConnection._CLIENT
     }
 }
