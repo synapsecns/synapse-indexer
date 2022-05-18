@@ -5,7 +5,7 @@ export class RedisConnection {
 
     static async getClient() {
         if (!RedisConnection._CLIENT) {
-            RedisConnection._CLIENT = new Redis("redis://localhost:6379");
+            RedisConnection._CLIENT = new Redis(process.env.REDIS_URI);
         }
         // while (RedisConnection._CLIENT.status !== 'ready'){}
         return RedisConnection._CLIENT
