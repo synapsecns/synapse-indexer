@@ -13,7 +13,7 @@ const ChainConfig = {
         name: Networks.ETH.name,
         rpc: () => (process.env.ETH_RPC),
         bridge: "0x2796317b0ff8538f253012862c06787adfb8ceb6",
-        startBlock: 13566427,
+        startBlock: 14772871,
         tokens: buildTokenInfo(ChainId.ETH),
     },
     [ChainId.BSC] : {
@@ -21,7 +21,7 @@ const ChainConfig = {
         name: Networks.BSC.name,
         rpc: () => (process.env.BSC_RPC),
         bridge: "0xd123f70ae324d34a9e76b67a27bf77593ba8749f",
-        startBlock: 12431591,
+        startBlock: 17792524,
         tokens: buildTokenInfo(ChainId.BSC),
     },
     [ChainId.ARBITRUM] : {
@@ -29,7 +29,7 @@ const ChainConfig = {
         name: Networks.ARBITRUM.name,
         rpc: () => (process.env.ARB_RPC),
         bridge: "0x6f4e8eba4d337f874ab57478acc2cb5bacdc19c9",
-        startBlock: 2876718,
+        startBlock: 12058508,
         tokens: buildTokenInfo(ChainId.ARBITRUM),
     },
     [ChainId.AVALANCHE] : {
@@ -37,7 +37,7 @@ const ChainConfig = {
         name: Networks.AVALANCHE.name,
         rpc: () => (process.env.AVAX_RPC),
         bridge: "0xc05e61d0e7a63d27546389b7ad62fdff5a91aace",
-        startBlock: 6619002,
+        startBlock: 14664267,
         tokens: buildTokenInfo(ChainId.AVALANCHE),
     },
     [ChainId.POLYGON] : {
@@ -45,7 +45,7 @@ const ChainConfig = {
         name: Networks.POLYGON.name,
         rpc: () => (process.env.POLYGON_RPC),
         bridge: "0x8f5bbb2bb8c2ee94639e55d5f41de9b4839c1280",
-        startBlock: 21071348,
+        startBlock:28318916,
         tokens: buildTokenInfo(ChainId.POLYGON),
     },
     [ChainId.FANTOM] : {
@@ -53,7 +53,7 @@ const ChainConfig = {
         name: Networks.FANTOM.name,
         rpc: () => (process.env.FTM_RPC),
         bridge: "0xaf41a65f786339e7911f4acdad6bd49426f2dc6b",
-        startBlock: 21297076,
+        startBlock:38182430,
         tokens: buildTokenInfo(ChainId.FANTOM),
     },
     [ChainId.HARMONY] : {
@@ -69,7 +69,7 @@ const ChainConfig = {
         name: Networks.BOBA.name,
         rpc: () => (process.env.BOBA_RPC),
         bridge: "0x432036208d2717394d2614d6697c46df3ed69540",
-        startBlock: 16221,
+        startBlock: 599462,
         tokens: buildTokenInfo(ChainId.BOBA),
     },
     [ChainId.MOONRIVER] : {
@@ -77,7 +77,7 @@ const ChainConfig = {
         name: Networks.MOONRIVER.name,
         rpc: () => (process.env.MOVR_RPC),
         bridge: "0xaed5b25be1c3163c907a471082640450f928ddfe",
-        startBlock: 890949,
+        startBlock: 1815083,
         tokens: buildTokenInfo(ChainId.MOONRIVER),
     },
     [ChainId.OPTIMISM] : {
@@ -85,7 +85,7 @@ const ChainConfig = {
         name: Networks.OPTIMISM.name,
         rpc: () => (process.env.OPTIMISM_RPC),
         bridge: "0xaf41a65f786339e7911f4acdad6bd49426f2dc6b",
-        startBlock: 30819,
+        startBlock: 8242073,
         tokens: buildTokenInfo(ChainId.OPTIMISM),
     },
     [ChainId.AURORA] : {
@@ -93,7 +93,7 @@ const ChainConfig = {
         name: Networks.AURORA.name,
         rpc: () => (process.env.AURORA_RPC),
         bridge: "0xaed5b25be1c3163c907a471082640450f928ddfe",
-        startBlock: 56092179,
+        startBlock: 65578362,
         tokens: buildTokenInfo(ChainId.AURORA),
     },
     [ChainId.MOONBEAM] : {
@@ -101,7 +101,7 @@ const ChainConfig = {
         name: Networks.MOONBEAM.name,
         rpc: () => (process.env.MOONBEAM_RPC),
         bridge: "0x84a420459cd31c3c34583f67e0f0fb191067d32f",
-        startBlock: 173355,
+        startBlock: 1021561,
         tokens: buildTokenInfo(ChainId.MOONBEAM),
     },
     [ChainId.CRONOS] : {
@@ -117,7 +117,7 @@ const ChainConfig = {
         name: Networks.METIS.name,
         rpc: () => (process.env.METIS_RPC),
         bridge: "0x06fea8513ff03a0d3f61324da709d4cf06f42a5c",
-        startBlock: 957508,
+        startBlock: 2655606,
         tokens: buildTokenInfo(ChainId.METIS),
     },
     [ChainId.DFK] : {
