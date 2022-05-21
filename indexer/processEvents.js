@@ -23,6 +23,24 @@ function getFunctionForEvent(eventName) {
 }
 
 /**
+ * Removes keys in object with undefined values
+ *
+ * @param obj
+ */
+function removeUndefinedValuesFromArgs(obj) {
+    let keysToRemove = []
+    for (let key of Object.keys(obj)) {
+        if (!obj[key]) {
+            keysToRemove.push(key);
+        }
+    }
+
+    for (let key of keysToRemove) {
+        delete obj[key];
+    }
+}
+
+/**
  * Receives array of logs and returns a dict with their args
  *
  * @param {Object} contractInterface
@@ -115,21 +133,25 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
  * @return {Promise<Query<any, any, {}, any>|*>}
  */
 async function upsertBridgeTxnInDb(kappa, args, logger) {
+    removeUndefinedValuesFromArgs(args);
+
     let filter = {"kappa": kappa};
     let existingTxn = await BridgeTransaction.findOne(filter);
 
     // Insert new transaction
     if (!existingTxn) {
         logger.debug(`Transaction with kappa ${kappa} not found. Inserting...`)
-        // TODO: add additional checks!
-        args.pending = false
+        args.pending = true
         return await new BridgeTransaction(
             args
         ).save();
     }
 
-    // Update existing bridge with args
-    logger.debug(`Transaction with kappa ${kappa} found. Updating...`)
+    // Update existing bridge with args with pending check
+    if ((existingTxn.fromTxnHash && args.toTxnHash) || (existingTxn.toTxnHash && args.fromTxnHash)) {
+        args.pending = false;
+    }
+    logger.debug(`Transaction with kappa ${kappa} found, pending set to ${args.pending}. Updating...`)
     return await BridgeTransaction.findOneAndUpdate(filter, args, {new: true});
 }
 
@@ -163,7 +185,7 @@ export async function processEvents(contract, chainConfig, events) {
             // Process transaction going out of a chain
             let toChainId = eventLogArgs.chainId.toString()
             let toAddress = eventLogArgs.to
-            let {fromAddress} = txn.from;
+            let fromAddress = txn.from;
             let {sentTokenAddress, sentTokenSymbol, sentValue} = parseTransferLog(
                 txnReceipt.logs,
                 chainConfig,
