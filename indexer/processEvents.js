@@ -275,7 +275,7 @@ export async function processEvents(contract, chainConfig, events) {
                 receivedToken = data.token;
 
                 if (eventName === "TokenWithdraw") {
-                    receivedValue = data.amount - data.fee
+                    receivedValue = BigNumber.from(data.amount).sub(BigNumber.from(data.fee))
                 }
             } else {
                 logger.error("In Event not convered")
@@ -298,9 +298,9 @@ export async function processEvents(contract, chainConfig, events) {
                             let logArgs = tokenContract.interface.parseLog(log).args
                             logger.debug(`log args after parsing for received value are ${JSON.stringify(logArgs)}`)
                             if (logArgs.value) {
-                                receivedValue = logArgs.value
+                                receivedValue = BigNumber.from(logArgs.value)
                             } else if (logArgs.amount) {
-                                receivedValue = logArgs.amount
+                                receivedValue = BigNumber.from(logArgs.amount)
                             }
                             logger.debug(`received value parsed is ${receivedValue}`)
                             break;
@@ -331,9 +331,11 @@ export async function processEvents(contract, chainConfig, events) {
                 }
             }
 
+            console.log(`Value here is ${receivedValue}`)
             if (!swapSuccess) {
-                receivedValue -= data.fee;
+                BigNumber.from(receivedValue).sub(BigNumber.from(data.fee));
             }
+            console.log(`Value after subtraction is ${receivedValue}`)
 
             await upsertBridgeTxnInDb(kappa, {
                     toTxnHash: txnHash,
