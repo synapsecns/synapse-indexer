@@ -77,12 +77,13 @@ function parseTransferLog(logs, chainConfig, logger) {
             res.sentTokenSymbol = chainConfig.tokens[log.address].symbol;
 
             let sentValue = log.data;
-            if (res.sentTokenSymbol !== "WETH" && chainConfig.id === 1) {
-                // Not an ERC-20 token, hence parsing value ?
+
+            // Non native token transfers on Ethereum
+            if (res.sentTokenSymbol !== "WETH" && chainConfig.id === ChainId.ETH) {
                 try {
                     sentValue = getTokenContract(chainConfig.id, res.sentTokenAddress).interface.parseLog(log).args.value;
                 } catch (e) {
-                    logger.error(e)
+                    logger.error('Error for non native token on Ethereum', e)
                 }
             }
             res.sentValue = BigNumber.from(sentValue).toString();
@@ -134,6 +135,7 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
  */
 async function upsertBridgeTxnInDb(kappa, args, logger) {
     removeUndefinedValuesFromArgs(args);
+    logger.debug(`values to be inserted in db for txn with kappa ${kappa} are ${JSON.stringify(args)}`)
 
     let filter = {"kappa": kappa};
     let existingTxn = await BridgeTransaction.findOne(filter);

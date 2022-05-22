@@ -1,4 +1,4 @@
-import {ChainId, Networks, SwapPools} from "@synapseprotocol/sdk"
+import {ChainId, Networks, SwapPools, Tokens} from "@synapseprotocol/sdk"
 import {ethers} from "ethers";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
 
@@ -139,6 +139,12 @@ const ChainConfig = {
  */
 function buildTokenInfo(chainId) {
     let tokenList = SwapPools.getAllSwappableTokensForNetwork(chainId);
+
+    // Accounts for ETH transfers on Ethereum
+    if (chainId === ChainId.ETH) {
+        tokenList.push(Tokens.WETH)
+    }
+
     let resObj = {};
     tokenList.forEach(tokenObj => {
         let address = tokenObj.address(chainId);

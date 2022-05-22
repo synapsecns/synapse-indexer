@@ -9,9 +9,9 @@ import {ChainId} from "@synapseprotocol/sdk";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "../indexer/processEvents.js";
 
-let blockIndex = 26814215
+let blockIndex = 14821295
 
-let chainConfig = ChainConfig[ChainId.HARMONY]
+let chainConfig = ChainConfig[ChainId.ETH]
 let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
 let w3Provider = getW3Provider(chainConfig.id);
 
@@ -29,7 +29,6 @@ let events = await bridgeContract.queryFilter(
     },
     blockIndex,
     blockIndex
-
 )
 
 await processEvents(bridgeContract, chainConfig, events)
