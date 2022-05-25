@@ -242,14 +242,17 @@ export async function processEvents(contract, chainConfig, events) {
                 data = {
                     to: eventLogArgs.to,
                     fee: eventLogArgs.fee,
-                    tokenIndexTo: eventLogArgs.swapTokenIndex,
                     swapSuccess: eventLogArgs.swapSuccess,
-                    token: eventLogArgs.token
+                    token: eventLogArgs.token,
+
+                    // This was probably never swapTokenIndex, only tokenIndexTo
+                    tokenIndexTo: eventLogArgs.swapTokenIndex ? eventLogArgs.swapTokenIndex : eventLogArgs.tokenIndexTo,
                 }
 
                 // Determine received token
                 if (data.swapSuccess) {
                     if (data.tokenIndexTo) {
+                        // This means that original token is nUSD or nETH and it was swapped for a stable/ETH
                         receivedToken = swapPoolAddresses[data.tokenIndexTo]
                     } else if (data.token) {
                         receivedToken = data.token
