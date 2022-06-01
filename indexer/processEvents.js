@@ -142,6 +142,10 @@ async function upsertBridgeTxnInDb(kappa, args, logger) {
 
     // Insert new transaction
     if (!existingTxn) {
+        // if IN has been received, txn is no longer pending and is complete
+        if (args.toTxnHash) {
+            args.pending = false;
+        }
         logger.debug(`Transaction with kappa ${kappa} not found. Inserting...`)
         args.pending = true
         return await new BridgeTransaction(
@@ -149,8 +153,8 @@ async function upsertBridgeTxnInDb(kappa, args, logger) {
         ).save();
     }
 
-    // Update existing bridge with args with pending check
-    if ((existingTxn.fromTxnHash && args.toTxnHash) || (existingTxn.toTxnHash && args.fromTxnHash)) {
+    // if IN has been received, txn is no longer pending and is complete
+    if (existingTxn.toTxnHash || args.toTxnHash) {
         args.pending = false;
     }
     logger.debug(`Transaction with kappa ${kappa} found, pending set to ${args.pending}. Updating...`)
