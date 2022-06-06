@@ -140,9 +140,11 @@ const ChainConfig = {
 function buildTokenInfo(chainId) {
     let tokenList = SwapPools.getAllSwappableTokensForNetwork(chainId);
 
-    // Accounts for ETH transfers on Ethereum
+    // ETH transfers on Ethereum, AVAX Transfers on Avalanche
     if (chainId === ChainId.ETH) {
         tokenList.push(Tokens.WETH)
+    } else if (chainId === ChainId.AVALANCHE) {
+        tokenList.push(Tokens.WAVAX)
     }
 
     let resObj = {};
