@@ -32,6 +32,10 @@ function getTokenPriceRedisKey(chainId, tokenAddress, date) {
  * @return {Promise<*>}
  */
 async function getTokenPriceRedis(chainId, tokenAddress, date) {
+    if (!redisClient) {
+        redisClient = await RedisConnection.getClient();
+    }
+
     let key = getTokenPriceRedisKey(chainId, tokenAddress, date)
     logger.debug(`Attempting to get cached price for ${key} from Redis`)
 
@@ -49,10 +53,6 @@ async function getTokenPriceRedis(chainId, tokenAddress, date) {
  * @return {Promise<*>}
  */
 async function putTokenPriceRedis(chainId, tokenAddress, date, price) {
-    if (!redisClient) {
-        redisClient = await RedisConnection.getClient();
-    }
-
     let key = getTokenPriceRedisKey(chainId, tokenAddress, date)
     logger.debug(`Caching price for ${key} in Redis`)
 
