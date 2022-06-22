@@ -8,8 +8,15 @@ const bridgeTransactionSchema = new mongoose.Schema({
     toTxnHash: String,
     toAddress: String,
     fromAddress: String,
+
     sentValue: String,
+    sentValueFormatted: Number,
+    sentValueUSD: Number,
+
     receivedValue: String,
+    receivedValueFormatted: Number,
+    receivedValueUSD: Number,
+
     fromChainId: Number,
     toChainId: Number,
     sentTime: Number,
@@ -19,8 +26,6 @@ const bridgeTransactionSchema = new mongoose.Schema({
     receivedTokenSymbol: String,
     receivedTokenAddress: String,
     kappa: String,
-    sentValueUSD: mongoose.Schema.Types.Decimal128,
-    receivedValueUSD: mongoose.Schema.Types.Decimal128,
     pending: Boolean,
     swapSuccess: Boolean,
 });

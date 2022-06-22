@@ -1,10 +1,10 @@
 import {getEventForTopic, getTopicsHash} from "../config/topics.js";
 import {BridgeTransaction} from "../db/transaction.js";
-import {BigNumber, ethers} from "ethers";
+import {BigNumber, FixedNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
-import {getUSDPriceForChainToken} from "../utils/currencyUtils.js";
+import {getFormattedValue, getUSDPriceForChainToken} from "../utils/currencyUtils.js";
 import {getCurrentISODate} from "../utils/timeUtils.js";
 
 /**
@@ -42,29 +42,58 @@ function removeUndefinedValuesFromArgs(obj) {
     }
 }
 
+/***
+ * Calculates amount formatted and USD value for amount sent
+ *
+ * @param {String} value
+ * @param {Number|String} chainId
+ * @param {String} tokenAddress
+ * @param {String} date
+ * @return {Promise<{valueFormatted: number, valueUSD: number}>}
+ */
+async function calculateFormattedUSDPrice(value, chainId, tokenAddress, date) {
+    try {
+        let valueFormatted = await getFormattedValue(chainId, tokenAddress, value)
+        let tokenUnitPrice = await getUSDPriceForChainToken(chainId, tokenAddress, date)
+        if (valueFormatted && tokenUnitPrice) {
+            let parsedValueFormatted = valueFormatted.toUnsafeFloat()
+            let parsedValueUSD = (valueFormatted.mulUnsafe(tokenUnitPrice)).toUnsafeFloat()
+
+            if (Number.isFinite(parsedValueFormatted) && Number.isFinite(parsedValueUSD)) {
+                return {
+                    valueFormatted: parsedValueFormatted,
+                    valueUSD: parsedValueUSD
+                }
+            }
+        }
+    } catch (err) {
+        throw err
+    }
+}
+
 /**
- * Adds USD prices for amount sent or received
+ * Adds USD prices for amount sent or received to the args passed
  *
  * @param {Object} args
+ * @param {Object} logger
  */
-async function appendUSDPricesForAmount(args) {
+async function appendFormattedUSDPrices(args, logger) {
     let date = getCurrentISODate()
-    if (args.sentValue) {
-        if (!args.fromChainId || !args.sentTokenAddress) {
-            return
+
+    try {
+        if (args.sentValue && args.fromChainId && args.sentTokenAddress) {
+            let prices = await calculateFormattedUSDPrice(args.sentValue, args.fromChainId, args.sentTokenAddress, date)
+            args.sentValueFormatted = prices.valueFormatted
+            args.sentValueUSD = prices.valueUSD
         }
-        let resPrice = await getUSDPriceForChainToken(args.fromChainId, args.sentTokenAddress, date)
-        if (resPrice) {
-            args.sentValueUSD = resPrice
+
+        if (args.receivedValue && args.toChainId && args.receivedTokenAddress) {
+            let prices = await calculateFormattedUSDPrice(args.receivedValue, args.toChainId, args.receivedTokenAddress, date)
+            args.receivedValueFormatted = prices.valueFormatted
+            args.receivedValueUSD = prices.valueUSD
         }
-    } else if (args.receivedValue) {
-        if (!args.toChainId || !args.receivedTokenAddress) {
-            return
-        }
-        let resPrice = await getUSDPriceForChainToken(args.toChainId, args.receivedTokenAddress, date)
-        if (resPrice) {
-            args.receivedValueUSD = resPrice
-        }
+    } catch (err) {
+        logger.error(`Unable to parse formatted values for txn with kappa ${args.kappa} - ${err.toString()}`)
     }
 }
 
@@ -163,7 +192,7 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
  */
 async function upsertBridgeTxnInDb(kappa, args, logger) {
     removeUndefinedValuesFromArgs(args);
-    await appendUSDPricesForAmount(args)
+    await appendFormattedUSDPrices(args, logger)
     logger.debug(`values to be inserted in db for txn with kappa ${kappa} are ${JSON.stringify(args)}`)
 
     let filter = {"kappa": kappa};
