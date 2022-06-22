@@ -1,3 +1,6 @@
+import dotenv  from "dotenv"
+dotenv.config({path:'../.env'})
+
 import fetch from 'node-fetch';
 import {getIndexerLogger} from "./loggerUtils.js";
 import {RedisConnection} from "../db/redis.js";
