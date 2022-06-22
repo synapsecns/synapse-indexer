@@ -4,6 +4,8 @@ import {BigNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
+import {getUSDPriceForChainToken} from "../utils/currencyUtils.js";
+import {getCurrentISODate} from "../utils/timeUtils.js";
 
 /**
  * Get name of contract function that emits the event
@@ -37,6 +39,26 @@ function removeUndefinedValuesFromArgs(obj) {
 
     for (let key of keysToRemove) {
         delete obj[key];
+    }
+}
+
+/**
+ * Adds USD prices for amount sent or received
+ *
+ * @param {Object} args
+ */
+async function appendUSDPricesForAmount(args) {
+    let date = getCurrentISODate()
+    if (args.sentValue) {
+        if (!args.fromChainId || !args.sentTokenAddress) {
+            return
+        }
+        args.sentValueUSD = await getUSDPriceForChainToken(args.fromChainId, args.sentTokenAddress, date)
+    } else if (args.receivedValue) {
+        if (!args.toChainId || !args.receivedTokenAddress) {
+            return
+        }
+        args.receivedValueUSD = await getUSDPriceForChainToken(args.toChainId, args.receivedTokenAddress, date)
     }
 }
 
@@ -135,6 +157,7 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
  */
 async function upsertBridgeTxnInDb(kappa, args, logger) {
     removeUndefinedValuesFromArgs(args);
+    await appendUSDPricesForAmount(args)
     logger.debug(`values to be inserted in db for txn with kappa ${kappa} are ${JSON.stringify(args)}`)
 
     let filter = {"kappa": kappa};
