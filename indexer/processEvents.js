@@ -53,12 +53,18 @@ async function appendUSDPricesForAmount(args) {
         if (!args.fromChainId || !args.sentTokenAddress) {
             return
         }
-        args.sentValueUSD = await getUSDPriceForChainToken(args.fromChainId, args.sentTokenAddress, date)
+        let resPrice = await getUSDPriceForChainToken(args.fromChainId, args.sentTokenAddress, date)
+        if (resPrice) {
+            args.sentValueUSD = resPrice
+        }
     } else if (args.receivedValue) {
         if (!args.toChainId || !args.receivedTokenAddress) {
             return
         }
-        args.receivedValueUSD = await getUSDPriceForChainToken(args.toChainId, args.receivedTokenAddress, date)
+        let resPrice = await getUSDPriceForChainToken(args.toChainId, args.receivedTokenAddress, date)
+        if (resPrice) {
+            args.receivedValueUSD = resPrice
+        }
     }
 }
 
