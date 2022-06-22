@@ -1,6 +1,3 @@
-import dotenv  from "dotenv"
-dotenv.config({path:'../.env'})
-
 import fetch from 'node-fetch';
 import {getIndexerLogger} from "./loggerUtils.js";
 import {RedisConnection} from "../db/redis.js";
@@ -10,8 +7,8 @@ const ANALYTICS_CHAIN_LIST = "https://synapse.dorime.org/api/v1/utils/chains"
 const ANALYTICS_PRICE_API = "https://synapse.dorime.org/api/v1/utils/price"
 
 // Init logger
+let redisClient;
 let logger = getIndexerLogger('currencyUtils');
-let redisClient = await RedisConnection.getClient();
 
 // Get chain names for ids
 let CHAIN_ID_TO_NAME = {}
@@ -52,6 +49,10 @@ async function getTokenPriceRedis(chainId, tokenAddress, date) {
  * @return {Promise<*>}
  */
 async function putTokenPriceRedis(chainId, tokenAddress, date, price) {
+    if (!redisClient) {
+        redisClient = await RedisConnection.getClient();
+    }
+
     let key = getTokenPriceRedisKey(chainId, tokenAddress, date)
     logger.debug(`Caching price for ${key} in Redis`)
 
