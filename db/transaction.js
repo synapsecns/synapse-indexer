@@ -19,6 +19,10 @@ const bridgeTransactionSchema = new mongoose.Schema({
 
     fromChainId: Number,
     toChainId: Number,
+
+    fromChainBlock: Number,
+    toChainBlock: Number,
+
     sentTime: Number,
     receivedTime: Number,
     sentTokenSymbol: String,
