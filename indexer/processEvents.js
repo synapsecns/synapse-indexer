@@ -51,7 +51,7 @@ function removeUndefinedValuesFromArgs(obj) {
  * @param {String} date
  * @return {Promise<{valueFormatted: number, valueUSD: number}>}
  */
-async function calculateFormattedUSDPrice(value, chainId, tokenAddress, date) {
+export async function calculateFormattedUSDPrice(value, chainId, tokenAddress, date) {
     try {
         let valueFormatted = await getFormattedValue(chainId, tokenAddress, value)
         let tokenUnitPrice = await getUSDPriceForChainToken(chainId, tokenAddress, date)
