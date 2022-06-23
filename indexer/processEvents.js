@@ -135,6 +135,11 @@ function parseTransferLog(logs, chainConfig, logger) {
 
             let sentValue = log.data;
 
+            // NOTE: Very hacky! Large amount assumes it's an Approval event and not a Transfer event.
+            if (BigNumber.from(sentValue).toString().length > 40) {
+                continue
+            }
+
             // Non native token transfers on Ethereum
             if (res.sentTokenSymbol !== "WETH" && chainConfig.id === ChainId.ETH) {
                 try {
