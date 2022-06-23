@@ -235,6 +235,7 @@ export async function processEvents(contract, chainConfig, events) {
         const txn = await event.getTransaction();
         const block = await event.getBlock();
         const timestamp = block.timestamp;
+        const blockNumber = block.number;
 
         const topicHash = event.topics[0];
         const eventInfo = getEventForTopic(topicHash);
@@ -277,7 +278,8 @@ export async function processEvents(contract, chainConfig, events) {
                 sentTokenSymbol,
                 kappa,
                 sentTime: timestamp,
-                pending
+                pending,
+                fromChainBlock: blockNumber
             }, logger)
 
             logger.info(`OUT with kappa ${kappa} txnHash ${txnHash} saved`)
@@ -419,7 +421,8 @@ export async function processEvents(contract, chainConfig, events) {
                     kappa,
                     receivedTime: timestamp,
                     toChainId: chainConfig.id,
-                    pending: false
+                    pending: false,
+                    toChainBlock: blockNumber
                 },
                 logger
             )
