@@ -43,7 +43,7 @@ for (let txn of res) {
     try {
         blockIndex = Number(txnInfo.blockNumber)
     } catch (err) {
-        couldNotParse.push(txnInfo.fromTxnHash)
+        couldNotParse.push(txnHash)
         console.error(`Could not parse txn with hash ${txnHash}`)
         continue
     }
