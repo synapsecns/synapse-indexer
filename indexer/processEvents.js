@@ -187,6 +187,21 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
 }
 
 /**
+ * Ensures amount isn't incorrect and logs if it is
+ *
+ * @param args
+ * @param logger
+ */
+function logErrorIfAmountIsRogue(args, logger) {
+    if (args.sentValue && BigNumber.from(args.sentValue).toString().length > 40) {
+        logger.error(`Transaction with hash ${args.fromTxnHash} has incorrect value!`)
+    }
+    if (args.receivedValue && BigNumber.from(args.receivedValue).toString().length > 40) {
+        logger.error(`Transaction with hash ${args.toTxnHash} has incorrect value!`)
+    }
+}
+
+/**
  * Insert IN/OUT Bridge Txn or update it with the IN/OUT counterpart
  * Idempotent for transactions with identical kappa and params
  *
@@ -197,7 +212,9 @@ async function getSwapPoolCoinAddresses(poolAddress, chainConfig, contract, chai
  */
 async function upsertBridgeTxnInDb(kappa, args, logger) {
     removeUndefinedValuesFromArgs(args);
+    logErrorIfAmountIsRogue(args, logger)
     await appendFormattedUSDPrices(args, logger)
+
     logger.debug(`values to be inserted in db for txn with kappa ${kappa} are ${JSON.stringify(args)}`)
 
     let filter = {"kappa": kappa};
@@ -395,11 +412,13 @@ export async function processEvents(contract, chainConfig, events) {
                 if (receivedValue !== data.amount) {
                     logger.debug(`Event is TokenMint, received value is ${receivedValue} and amount is ${data.amount}`)
                     for (let log of txnReceipt.logs) {
-                        receivedValue = BigNumber.from(log.data);
-                        receivedToken =  log.address;
-                        logger.debug(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
-                        if (data.amount.gt(receivedValue)) {
-                            break;
+                        if (log.address === receivedToken) {
+                            receivedValue = BigNumber.from(log.data);
+                            receivedToken = log.address;
+                            logger.debug(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
+                            if (data.amount.gt(receivedValue)) {
+                                break;
+                            }
                         }
                     }
                 }

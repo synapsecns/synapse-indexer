@@ -6,21 +6,15 @@ import {BridgeTransaction} from "../db/transaction.js";
 
 import mongoose from "mongoose";
 import {buildBridgeContract, ChainConfig, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
-import {ChainId} from "@synapseprotocol/sdk";
-import {BigNumber, ethers} from "ethers";
+import {ethers} from "ethers";
 import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "../indexer/processEvents.js";
 await mongoose.connect(process.env.MONGO_URI).catch((err) => console.error(err));
 
-
-// Chain config for Arbitrum
-let chainConfig = ChainConfig[ChainId.ARBITRUM]
-let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
-let w3Provider = getW3Provider(chainConfig.id);
-let bridgeContract = buildBridgeContract(
-    bridgeContractAddress,
-    getBridgeContractAbi(),
-    w3Provider
+// Get count first
+console.log(await BridgeTransaction.count({
+        "sentValue": { "$exists": true },"$expr": { "$gt": [ { "$strLenCP":"$sentValue" }, 40]}
+    })
 )
 
 // Find txns with incorrect amount
@@ -32,6 +26,16 @@ let cnt = 0
 let couldNotParse = []
 
 for (let txn of res) {
+
+    // Get chain config
+    let chainConfig = ChainConfig[txn.fromChainId]
+    let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
+    let w3Provider = getW3Provider(chainConfig.id);
+    let bridgeContract = buildBridgeContract(
+        bridgeContractAddress,
+        getBridgeContractAbi(),
+        w3Provider
+    )
 
     // Get block number
     let txnHash = txn.fromTxnHash
@@ -66,5 +70,5 @@ for (let txn of res) {
     console.log(`${cnt} done`)
 }
 
+console.log(`Could not parse these: ${couldNotParse}`)
 console.log(`Finished!`)
-console.log(`Could not parse: ${couldNotParse}`)
