@@ -39,7 +39,7 @@ for await (const txn of BridgeTransaction.find({sentValueUSD: {$exists: false}})
     try {
         let args = txn
         await appendPricesForDate(args, logger, args.sentTime, args.receivedTime)
-        let res = BridgeTransaction.findOneAndUpdate(
+        let res = await BridgeTransaction.findOneAndUpdate(
             {"kappa":args.kappa},
             args,
             {new: true}
