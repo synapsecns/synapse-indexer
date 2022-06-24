@@ -45,7 +45,7 @@ export async function appendPricesForDate(args, logger, sentTime, receivedTime) 
 // Get count
 console.log(await BridgeTransaction.count({sentValueUSD: {$exists: false}}))
 
-for await (const txn of BridgeTransaction.find({sentValueUSD: {$exists: false}}).limit(10).cursor()) {
+for await (const txn of BridgeTransaction.find({sentValueUSD: {$exists: false}}).cursor()) {
     try {
         let args = txn
         await appendPricesForDate(args, logger, args.sentTime, args.receivedTime)
