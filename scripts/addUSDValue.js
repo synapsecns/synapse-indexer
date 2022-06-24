@@ -12,6 +12,7 @@ await mongoose.connect(process.env.MONGO_URI).catch((err) => console.error(err))
 
 let cnt = 0
 let logger = getIndexerLogger(`addUSDValue`);
+let errorTokens = new Set()
 
 export async function appendPricesForDate(args, logger, sentTime, receivedTime) {
     try {
@@ -22,7 +23,12 @@ export async function appendPricesForDate(args, logger, sentTime, receivedTime) 
             args.sentValueFormatted = prices.valueFormatted
             args.sentValueUSD = prices.valueUSD
         }
+    } catch (err) {
+        logger.error(`Unable to parse formatted values for txn with from txn hash ${args.fromTxnHash} - ${err.toString()}`)
+        errorTokens.add(args.sentTokenAddress)
+    }
 
+    try {
         if (args.receivedValue && args.toChainId && args.receivedTokenAddress) {
             let receivedDate = getISODateFromEpoch(receivedTime)
 
@@ -31,11 +37,15 @@ export async function appendPricesForDate(args, logger, sentTime, receivedTime) 
             args.receivedValueUSD = prices.valueUSD
         }
     } catch (err) {
-        logger.error(`Unable to parse formatted values for txn with kappa ${args.kappa} - ${err.toString()}`)
+        logger.error(`Unable to parse formatted values for txn with to txn hash ${args.toTxnHash} - ${err.toString()}`)
+        errorTokens.add(args.receivedTokenAddress)
     }
 }
 
-for await (const txn of BridgeTransaction.find({sentValueUSD: {$exists: false}}).cursor()) {
+// Get count
+console.log(await BridgeTransaction.count({sentValueUSD: {$exists: false}}))
+
+for await (const txn of BridgeTransaction.find({sentValueUSD: {$exists: false}}).limit(10).cursor()) {
     try {
         let args = txn
         await appendPricesForDate(args, logger, args.sentTime, args.receivedTime)
@@ -52,3 +62,5 @@ for await (const txn of BridgeTransaction.find({sentValueUSD: {$exists: false}})
 }
 
 console.log("Finished!")
+console.log(`Could not find for tokens`)
+console.log(errorTokens)
