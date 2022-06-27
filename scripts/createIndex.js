@@ -18,6 +18,8 @@ resCreationArr.push(await bridgeTransactions.createIndex({kappa: 1}));
 resCreationArr.push(await bridgeTransactions.createIndex({pending: 1}));
 resCreationArr.push(await bridgeTransactions.createIndex({sentTime: -1}));
 resCreationArr.push(await bridgeTransactions.createIndex({receivedTime: -1}));
+resCreationArr.push(await bridgeTransactions.createIndex({fromTxnHash: 1}));
+resCreationArr.push(await bridgeTransactions.createIndex({toTxnHash: 1}));
 
 console.log(`Indices created: ${resCreationArr}`);
 
