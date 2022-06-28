@@ -416,7 +416,7 @@ export async function processEvents(contract, chainConfig, events) {
                             receivedValue = BigNumber.from(log.data);
                             receivedToken = log.address;
                             logger.debug(`Received value is ${receivedValue}, data.amount is ${data.amount}`);
-                            if (data.amount.gt(receivedValue)) {
+                            if (data.amount.gte(receivedValue)) {
                                 break;
                             }
                         }

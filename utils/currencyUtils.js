@@ -109,6 +109,7 @@ async function getTokenPriceRedis(chainId, tokenAddress, date) {
     logger.debug(`Attempting to get cached price for ${key} from Redis`)
 
     let res = await redisClient.get(key)
+    res = res ? res.substring(0, Math.min(18 - 1, res.length)) : res
     return res ? FixedNumber.from(res) : null
 }
 
