@@ -93,7 +93,7 @@ async function appendFormattedUSDPrices(args, logger) {
             args.receivedValueUSD = prices.valueUSD
         }
     } catch (err) {
-        logger.error(`Unable to parse formatted values for txn with kappa ${args.kappa} - ${err.toString()}`)
+        logger.warn(`Unable to parse formatted values for txn with kappa ${args.kappa} - ${err.toString()}`)
     }
 }
 
@@ -262,7 +262,22 @@ export async function processEvents(contract, chainConfig, events) {
 
         logger.debug(eventInfo)
 
-        const txnReceipt = await event.getTransactionReceipt();
+        // Try to get txn receipt again and again until it fails
+        let retryCnt = 0
+        let maxReties = 3
+        let txnReceipt = null
+        while (!txnReceipt) {
+            try {
+                txnReceipt = await event.getTransactionReceipt();
+            } catch (err) {
+                retryCnt += 1
+                logger.warn(`Retry cnt - ${retryCnt} - failed to get txn receipt for event with txn Hash ${txnHash}`)
+                if (retryCnt > maxReties) {
+                    throw err
+                }
+            }
+        }
+
         let eventLogArgs = getEventLogArgs(
             contract.interface,
             txnReceipt.logs,
