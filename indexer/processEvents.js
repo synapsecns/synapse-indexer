@@ -301,7 +301,7 @@ export async function processEvents(contract, chainConfig, events) {
             }, logger)
 
             eventCnt += 1
-            logger.info(`OUT with kappa ${kappa} txnHash ${txnHash} saved - event no ${eventCnt}`)
+            logger.info(`${eventCnt} - OUT with kappa ${kappa} txnHash ${txnHash} saved`)
 
         } else {
             let kappa = eventLogArgs.kappa;
@@ -449,7 +449,7 @@ export async function processEvents(contract, chainConfig, events) {
             )
 
             eventCnt += 1
-            logger.info(`IN with kappa ${kappa} saved - event no ${eventCnt}`)
+            logger.info(`${eventCnt} - IN with kappa ${kappa} saved`)
         }
 
     }
