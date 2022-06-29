@@ -25,6 +25,9 @@ export async function indexForward(chainConfig) {
     let forwardTimeout = 45
     if (chainConfig.id === Networks.DFK.id) {
         forwardTimeout = 1500
+        logger.info(`Setting timeout for DFK as ${forwardTimeout}`)
+    } else {
+        logger.info(`Setting as ${forwardTimeout}`)
     }
     await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', forwardTimeout)
 
