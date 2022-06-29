@@ -24,7 +24,7 @@ export async function indexForward(chainConfig) {
     // Release lock in about 60 seconds
     let forwardTimeout = 45
     if (chainConfig.id === Networks.DFK.id) {
-        forwardTimeout = 200
+        forwardTimeout = 1500
     }
     await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', forwardTimeout)
 
