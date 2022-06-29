@@ -451,4 +451,5 @@ export async function processEvents(contract, chainConfig, events) {
         }
     }
 
+    logger.debug(`Finished processing ${events.length} events`)
 }
