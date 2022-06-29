@@ -24,9 +24,11 @@ export async function indexForward(chainConfig) {
 
     // Release lock in about 45 seconds
     let forwardTimeout = 45
-    if (chainConfig.id === 53935) {
+
+    // In light of the harmony bridge, lot of txn bw DFK and Avalanche
+    if (chainConfig.id === 53935 || chainConfig.id === 43114) {
         forwardTimeout = 1800
-        logger.info(`Setting timeout as ${forwardTimeout}for DFK, ${chainConfig.id}`)
+        logger.info(`Setting timeout as ${forwardTimeout} for ${chainConfig.id}`)
     } else {
         logger.info(`Setting timeout ${forwardTimeout}`)
     }
