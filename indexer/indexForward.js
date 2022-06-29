@@ -5,6 +5,7 @@ import {processEvents} from "./processEvents.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
 import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
+import {Networks} from "@synapseprotocol/sdk";
 
 export async function indexForward(chainConfig) {
     let logger = getIndexerLogger(`${chainConfig.name}_${indexForward.name}`)
@@ -20,8 +21,12 @@ export async function indexForward(chainConfig) {
         return;
     }
 
-    // Release lock in about 20 seconds
-    await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', 20)
+    // Release lock in about 60 seconds
+    let forwardTimeout = 45
+    if (chainConfig.id === Networks.DFK.id) {
+        forwardTimeout = 200
+    }
+    await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', forwardTimeout)
 
     try {
         let w3Provider = getW3Provider(chainConfig.id);
