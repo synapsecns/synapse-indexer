@@ -246,6 +246,7 @@ export async function processEvents(contract, chainConfig, events) {
 
     logger.debug(`proceeding to process ${events.length} retrieved events`)
 
+    let eventCnt = 0
     for (let event of events) {
 
         const txnHash = event.transactionHash;
@@ -299,7 +300,8 @@ export async function processEvents(contract, chainConfig, events) {
                 fromChainBlock: blockNumber
             }, logger)
 
-            logger.info(`OUT with kappa ${kappa} txnHash ${txnHash} saved`)
+            eventCnt += 1
+            logger.info(`OUT with kappa ${kappa} txnHash ${txnHash} saved - event no ${eventCnt}`)
 
         } else {
             let kappa = eventLogArgs.kappa;
@@ -446,9 +448,10 @@ export async function processEvents(contract, chainConfig, events) {
                 logger
             )
 
-            logger.info(`IN with kappa ${kappa} saved`)
-
+            eventCnt += 1
+            logger.info(`IN with kappa ${kappa} saved - event no ${eventCnt}`)
         }
+
     }
 
     logger.debug(`Finished processing ${events.length} events`)

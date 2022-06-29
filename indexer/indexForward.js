@@ -5,7 +5,8 @@ import {processEvents} from "./processEvents.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
 import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
-import {Networks} from "@synapseprotocol/sdk";
+
+let BLOCK_INTERVAL = 300
 
 export async function indexForward(chainConfig) {
     let logger = getIndexerLogger(`${chainConfig.name}_${indexForward.name}`)
@@ -21,10 +22,10 @@ export async function indexForward(chainConfig) {
         return;
     }
 
-    // Release lock in about 60 seconds
+    // Release lock in about 45 seconds
     let forwardTimeout = 45
     if (chainConfig.id === 53935) {
-        forwardTimeout = 1500
+        forwardTimeout = 2300
         logger.info(`Setting timeout as ${forwardTimeout}for DFK, ${chainConfig.id}`)
     } else {
         logger.info(`Setting timeout ${forwardTimeout}`)
@@ -49,10 +50,10 @@ export async function indexForward(chainConfig) {
         //     return;
         // }
 
-        // We forward upto 500 blocks ahead to account for service downtime and restart
+        // We forward upto `BLOCK_INTERVAL` blocks ahead to account for service downtime and restart
         let maxBlockToIndexUntil = Math.min(
             networkLatestBlock,
-            indexedLatestBlock + 500
+            indexedLatestBlock + BLOCK_INTERVAL
         )
 
         logger.debug(`network latest block: ${networkLatestBlock}`);
