@@ -8,7 +8,6 @@ import mongoose from "mongoose";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
 import {calculateFormattedUSDPrice} from "../indexer/processEvents.js";
 import {getISODateFromEpoch} from "../utils/timeUtils.js";
-import {ethers} from "ethers";
 await mongoose.connect(process.env.MONGO_URI).catch((err) => console.error(err));
 
 let cnt = 0
@@ -19,7 +18,6 @@ export async function appendPricesForDate(args, logger, sentTime, receivedTime) 
     try {
         if (args.sentValue && args.fromChainId && args.sentTokenAddress) {
             let sentDate = getISODateFromEpoch(sentTime)
-
             let prices = await calculateFormattedUSDPrice(args.sentValue, args.fromChainId, args.sentTokenAddress.toLowerCase(), sentDate)
             args.sentValueFormatted = prices.valueFormatted
             args.sentValueUSD = prices.valueUSD
@@ -32,7 +30,6 @@ export async function appendPricesForDate(args, logger, sentTime, receivedTime) 
     try {
         if (args.receivedValue && args.toChainId && args.receivedTokenAddress) {
             let receivedDate = getISODateFromEpoch(receivedTime)
-
             let prices = await calculateFormattedUSDPrice(args.receivedValue, args.toChainId, args.receivedTokenAddress.toLowerCase(), receivedDate)
             args.receivedValueFormatted = prices.valueFormatted
             args.receivedValueUSD = prices.valueUSD

@@ -4,7 +4,7 @@ import {BigNumber, FixedNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
-import {getFormattedValue, getUSDPriceForChainToken} from "../utils/currencyUtils.js";
+import {getFormattedValue, getUSDPriceForChainToken, MISSING_TOKENS_MAP} from "../utils/currencyUtils.js";
 import {getCurrentISODate} from "../utils/timeUtils.js";
 
 /**
@@ -53,6 +53,14 @@ function removeUndefinedValuesFromArgs(obj) {
  */
 export async function calculateFormattedUSDPrice(value, chainId, tokenAddress, date) {
     try {
+
+        // Hack to get unsupported tokens
+        if (tokenAddress in MISSING_TOKENS_MAP) {
+            tokenAddress = MISSING_TOKENS_MAP[tokenAddress]
+        } else if (tokenAddress.toLowerCase() in MISSING_TOKENS_MAP) {
+            tokenAddress = MISSING_TOKENS_MAP[tokenAddress.toLowerCase()]
+        }
+
         let valueFormatted = await getFormattedValue(chainId, tokenAddress, value)
         let tokenUnitPrice = await getUSDPriceForChainToken(chainId, tokenAddress, date)
         if (valueFormatted && tokenUnitPrice) {

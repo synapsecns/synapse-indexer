@@ -11,9 +11,9 @@ import {processEvents} from "../indexer/processEvents.js";
 
 
 let blockIndex =
-    2102530
+    3876325
 
-let chainConfig = ChainConfig[ChainId.MOONRIVER]
+let chainConfig = ChainConfig[ChainId.DFK]
 let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
 let w3Provider = getW3Provider(chainConfig.id);
 
