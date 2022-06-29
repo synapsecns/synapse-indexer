@@ -157,33 +157,34 @@ export async function getUSDPriceForChainToken(chainId, tokenAddress, date = nul
         return cachedRes
     }
 
-    let currentTokenPriceUrl = ANALYTICS_PRICE_API + `/${chainName}/${tokenAddress}`
-    let tokenPriceUrl = date ? currentTokenPriceUrl + `?date=${date}` : currentTokenPriceUrl
-
-    try {
-
-        // Attempt to get price for date
-        let res = await fetch(tokenPriceUrl);
-        if (res.status !== 200) {
-            throw new Error(`Invalid request, API status is ${res.status} for ${tokenPriceUrl}`)
-        }
-        let price = (await res.json())['price']
-
-        // 0 implies price doesn't exist for date, fallback is to get current price
-        if (date && price === 0) {
-            logger.warn(`No price available for token ${tokenAddress} on chain ${chainId} for date ${date}. Attempting to get current price`);
-            res = await fetch(currentTokenPriceUrl);
-            if (res.status !== 200) {
-                throw new Error(`Invalid request, API status is ${res.status} for for ${currentTokenPriceUrl}`)
-            }
-            price = (await res.json())['price']
-        }
-
-        return await putTokenPriceRedis(chainId, tokenAddress, date, price);
-
-    } catch (err) {
-        logger.error(`Error getting price for token ${tokenAddress} on chain ${chainId} for date ${date} - ${err.toString()}`);
-    }
+    // TODO: Throw price in workers
+    // let currentTokenPriceUrl = ANALYTICS_PRICE_API + `/${chainName}/${tokenAddress}`
+    // let tokenPriceUrl = date ? currentTokenPriceUrl + `?date=${date}` : currentTokenPriceUrl
+    //
+    // try {
+    //
+    //     // Attempt to get price for date
+    //     let res = await fetch(tokenPriceUrl);
+    //     if (res.status !== 200) {
+    //         throw new Error(`Invalid request, API status is ${res.status} for ${tokenPriceUrl}`)
+    //     }
+    //     let price = (await res.json())['price']
+    //
+    //     // 0 implies price doesn't exist for date, fallback is to get current price
+    //     if (date && price === 0) {
+    //         logger.warn(`No price available for token ${tokenAddress} on chain ${chainId} for date ${date}. Attempting to get current price`);
+    //         res = await fetch(currentTokenPriceUrl);
+    //         if (res.status !== 200) {
+    //             throw new Error(`Invalid request, API status is ${res.status} for for ${currentTokenPriceUrl}`)
+    //         }
+    //         price = (await res.json())['price']
+    //     }
+    //
+    //     return await putTokenPriceRedis(chainId, tokenAddress, date, price);
+    //
+    // } catch (err) {
+    //     logger.error(`Error getting price for token ${tokenAddress} on chain ${chainId} for date ${date} - ${err.toString()}`);
+    // }
 
     return null
 }
