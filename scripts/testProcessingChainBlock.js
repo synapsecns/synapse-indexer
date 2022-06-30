@@ -10,10 +10,9 @@ import {getTopicsHash} from "../config/topics.js";
 import {processEvents} from "../indexer/processEvents.js";
 
 
-let blockIndex =
-    3876325
+let blockIndex = 16730148
 
-let chainConfig = ChainConfig[ChainId.DFK]
+let chainConfig = ChainConfig[ChainId.AVALANCHE]
 let bridgeContractAddress = ethers.utils.getAddress(chainConfig.bridge);
 let w3Provider = getW3Provider(chainConfig.id);
 

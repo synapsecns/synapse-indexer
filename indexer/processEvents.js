@@ -4,7 +4,7 @@ import {BigNumber, FixedNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
-import {getFormattedValue, getUSDPriceForChainToken, MISSING_TOKENS_MAP} from "../utils/currencyUtils.js";
+import {getFormattedValue, getCachedUSDPriceForChainToken} from "../utils/currencyUtils.js";
 import {getCurrentISODate} from "../utils/timeUtils.js";
 
 /**
@@ -52,31 +52,28 @@ function removeUndefinedValuesFromArgs(obj) {
  * @return {Promise<{valueFormatted: number, valueUSD: number}>}
  */
 export async function calculateFormattedUSDPrice(value, chainId, tokenAddress, date) {
-    try {
+    let res = {}
 
-        // Hack to get unsupported tokens
-        if (tokenAddress in MISSING_TOKENS_MAP) {
-            tokenAddress = MISSING_TOKENS_MAP[tokenAddress]
-        } else if (tokenAddress.toLowerCase() in MISSING_TOKENS_MAP) {
-            tokenAddress = MISSING_TOKENS_MAP[tokenAddress.toLowerCase()]
+    let valueFormatted = await getFormattedValue(chainId, tokenAddress, value)
+
+    // Get parsed value formatted
+    if (valueFormatted) {
+        let parsedValueFormatted = valueFormatted.toUnsafeFloat()
+        if (Number.isFinite(parsedValueFormatted)) {
+            res.valueFormatted = parsedValueFormatted
         }
 
-        let valueFormatted = await getFormattedValue(chainId, tokenAddress, value)
-        let tokenUnitPrice = await getUSDPriceForChainToken(chainId, tokenAddress, date)
-        if (valueFormatted && tokenUnitPrice) {
-            let parsedValueFormatted = valueFormatted.toUnsafeFloat()
+        // Get token USD price
+        let tokenUnitPrice = await getCachedUSDPriceForChainToken(chainId, tokenAddress, date)
+        if (tokenUnitPrice) {
             let parsedValueUSD = (valueFormatted.mulUnsafe(tokenUnitPrice)).toUnsafeFloat()
-
-            if (Number.isFinite(parsedValueFormatted) && Number.isFinite(parsedValueUSD)) {
-                return {
-                    valueFormatted: parsedValueFormatted,
-                    valueUSD: parsedValueUSD
-                }
+            if (Number.isFinite(parsedValueUSD)) {
+                res.valueUSD = parsedValueUSD
             }
         }
-    } catch (err) {
-        throw err
     }
+
+    return res
 }
 
 /**
@@ -219,9 +216,9 @@ function logErrorIfAmountIsRogue(args, logger) {
  * @return {Promise<Query<any, any, {}, any>|*>}
  */
 async function upsertBridgeTxnInDb(kappa, args, logger) {
-    removeUndefinedValuesFromArgs(args);
     logErrorIfAmountIsRogue(args, logger)
     await appendFormattedUSDPrices(args, logger)
+    removeUndefinedValuesFromArgs(args);
 
     logger.debug(`values to be inserted in db for txn with kappa ${kappa} are ${JSON.stringify(args)}`)
 
