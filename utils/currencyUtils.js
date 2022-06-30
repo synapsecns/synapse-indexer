@@ -4,19 +4,9 @@ import {getIndexerLogger} from "./loggerUtils.js";
 import {RedisConnection} from "../db/redis.js";
 import {ethers, FixedNumber} from "ethers";
 
-// API endpoints
-const ANALYTICS_CHAIN_LIST = "https://synapse.dorime.org/api/v1/utils/chains"
-const ANALYTICS_PRICE_API = "https://synapse.dorime.org/api/v1/utils/price"
-
 // Init logger
 let redisClient;
 let logger = getIndexerLogger('currencyUtils');
-
-// Get chain names for ids
-let CHAIN_ID_TO_NAME = {}
-await fetch(ANALYTICS_CHAIN_LIST).then(async res => {
-    CHAIN_ID_TO_NAME = await res.json();
-})
 
 // Build map of addresses to token
 let ADDRESS_TOKEN_MAP = {}
@@ -79,17 +69,23 @@ export function getFormattedValue(chainId, tokenAddress, value) {
         let res = bigValue.divUnsafe(bigDivisor)
         return res
     } catch (err) {
-        logger.error(err)
+        logger.error(`Could not get formatted value ${chainId} - ${tokenAddress}. Error is ${err}`)
     }
     return null
 }
 
 
-function getTokenPriceRedisKey(chainId, tokenAddress, date) {
+export function getTokenPriceRedisKey(chainId, tokenAddress, date) {
+    tokenAddress = tokenAddress.toLowerCase()
     if (date) {
         return `${chainId}_${tokenAddress}_${date}_USD_PRICE`
     }
     return `${chainId}_${tokenAddress}_USD_PRICE`
+}
+
+export function getFallbackTokenPriceRedisKey(chainId, tokenAddress, date) {
+    let originalKey = getTokenPriceRedisKey(chainId, tokenAddress, date)
+    return `${originalKey}_FALLBACK`
 }
 
 /***
@@ -98,18 +94,22 @@ function getTokenPriceRedisKey(chainId, tokenAddress, date) {
  * @param {String|Number} chainId
  * @param {String} tokenAddress
  * @param {String} date
+ * @param {String} keyOverride
  * @return {Promise<FixedNumber|null>}
  */
-async function getTokenPriceRedis(chainId, tokenAddress, date) {
+export async function getTokenPriceRedis(chainId, tokenAddress, date, keyOverride = null) {
     if (!redisClient) {
         redisClient = await RedisConnection.getClient();
     }
 
-    let key = getTokenPriceRedisKey(chainId, tokenAddress, date)
+    let key = keyOverride ? keyOverride : getTokenPriceRedisKey(chainId, tokenAddress, date)
     logger.debug(`Attempting to get cached price for ${key} from Redis`)
 
     let res = await redisClient.get(key)
     res = res ? res.substring(0, Math.min(18 - 1, res.length)) : res
+    if (res) {
+        logger.debug(`Got cached price for ${key} from Redis as ${res}`)
+    }
     return res ? FixedNumber.from(res) : null
 }
 
@@ -122,7 +122,7 @@ async function getTokenPriceRedis(chainId, tokenAddress, date) {
  * @param {Number} price
  * @return {Promise<FixedNumber>}
  */
-async function putTokenPriceRedis(chainId, tokenAddress, date, price) {
+export async function putTokenPriceRedis(chainId, tokenAddress, date, price) {
     let key = getTokenPriceRedisKey(chainId, tokenAddress, date)
     logger.debug(`Caching price for ${key} in Redis as ${price}`)
 
@@ -132,6 +132,11 @@ async function putTokenPriceRedis(chainId, tokenAddress, date, price) {
         // Set a TTL for current price
         await redisClient.set(key, price, 'EX', 3600)
     }
+
+    // Also store fallback key, in case of currency API requests failures
+    let fallbackKey = getFallbackTokenPriceRedisKey(chainId, tokenAddress, date)
+    await redisClient.set(fallbackKey, price)
+
     return FixedNumber.from(price.toString())
 }
 
@@ -145,46 +150,9 @@ async function putTokenPriceRedis(chainId, tokenAddress, date, price) {
  * @return {Promise<FixedNumber|null>}
  */
 
-export async function getUSDPriceForChainToken(chainId, tokenAddress, date = null) {
-    let chainName = CHAIN_ID_TO_NAME[chainId]
-    if (!chainName) {
-        logger.error(`Unsupported chain with id ${chainId}`)
-        return null
-    }
-
+export async function getCachedUSDPriceForChainToken(chainId, tokenAddress, date = null) {
     let cachedRes = await getTokenPriceRedis(chainId, tokenAddress, date)
     if (cachedRes) {
         return cachedRes
     }
-
-    // TODO: Throw price in workers
-    // let currentTokenPriceUrl = ANALYTICS_PRICE_API + `/${chainName}/${tokenAddress}`
-    // let tokenPriceUrl = date ? currentTokenPriceUrl + `?date=${date}` : currentTokenPriceUrl
-    //
-    // try {
-    //
-    //     // Attempt to get price for date
-    //     let res = await fetch(tokenPriceUrl);
-    //     if (res.status !== 200) {
-    //         throw new Error(`Invalid request, API status is ${res.status} for ${tokenPriceUrl}`)
-    //     }
-    //     let price = (await res.json())['price']
-    //
-    //     // 0 implies price doesn't exist for date, fallback is to get current price
-    //     if (date && price === 0) {
-    //         logger.warn(`No price available for token ${tokenAddress} on chain ${chainId} for date ${date}. Attempting to get current price`);
-    //         res = await fetch(currentTokenPriceUrl);
-    //         if (res.status !== 200) {
-    //             throw new Error(`Invalid request, API status is ${res.status} for for ${currentTokenPriceUrl}`)
-    //         }
-    //         price = (await res.json())['price']
-    //     }
-    //
-    //     return await putTokenPriceRedis(chainId, tokenAddress, date, price);
-    //
-    // } catch (err) {
-    //     logger.error(`Error getting price for token ${tokenAddress} on chain ${chainId} for date ${date} - ${err.toString()}`);
-    // }
-
-    return null
 }
