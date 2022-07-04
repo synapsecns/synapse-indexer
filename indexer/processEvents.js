@@ -1,4 +1,4 @@
-import {getEventForTopic, getTopicsHash} from "../config/topics.js";
+import {getEventForTopic, getTopicsHash, Topics, ApprovalHash} from "../config/topics.js";
 import {BridgeTransaction} from "../db/transaction.js";
 import {BigNumber, FixedNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
@@ -134,7 +134,9 @@ function parseTransferLog(logs, chainConfig, logger) {
 
     let res = {};
     for (let log of logs) {
-        if (Object.keys(chainConfig.tokens).includes(log.address)) {
+        if (Object.keys(chainConfig.tokens).includes(log.address) &&
+            log.topics && log.topics[0].toLowerCase() !== ApprovalHash) {
+
             res.sentTokenAddress = log.address;
             res.sentTokenSymbol = chainConfig.tokens[log.address].symbol;
 
