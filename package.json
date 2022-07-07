@@ -1,10 +1,11 @@
 {
-  "name": "synapse-explorer-indexer",
+  "name": "synapse-indexer",
   "version": "1.0.0",
   "type": "module",
   "description": "",
   "main": "run.js",
   "scripts": {
+    "start": "node run.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
