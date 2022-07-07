@@ -12,6 +12,11 @@ Indexes Bridge Transactions for Synapse across all chains.
     * RPCs, *MONGO_URI* and *REDIS_URI* should be set appropriately
 * `npm start`
 
+### Notes
+* Once the indexer is started, latest bridge transactions should begin starting to get indexed. However, historical transactions are indexed in reverse chronological order until the start block in that chain's config
+  * For all of backindexing to complete across all chains, it may take a few days. To avoid this, you can set the `startBlock` in that chain's config to be the network's current latest block, effectively only processing latest events as they come.
+* USD prices for transactions require an additional worker to be run, found in `workers/` that indexes the token's USD price in Redis.
+
 ### How this works
 
 * Config
