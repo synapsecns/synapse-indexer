@@ -24,3 +24,4 @@ Indexes Bridge Transactions for Synapse across all chains.
 * Processing
   * Once these events are fetched, they must be processed to extract necessary transaction information out of their event logs, which is done in `processEvents.js` and then stored in the DB 
   * We process two types of transactions, `OUT` events which is from the user's end and `IN` events which is from the validators. Both of these combined form a complete bridge transaction
+  * Once processed, we update state in Redis and Mongo, moving on to processing the next batch of events.
