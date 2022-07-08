@@ -267,7 +267,7 @@ export async function processEvents(contract, chainConfig, events) {
         const eventDirection = eventInfo.direction;
         const eventName = eventInfo.eventName;
 
-        logger.debug(eventInfo)
+        logger.debug(eventInfo.toString())
 
         // Try to get txn receipt again and again until it fails
         let retryCnt = 0
