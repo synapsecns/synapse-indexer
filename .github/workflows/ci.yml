@@ -33,21 +33,6 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Verify Redis connection
-        env:
-          PORT: ${{ job.services.redis.ports[6379] }}
-        run: |
-          while ! redis-cli ping | grep PONG; do
-          sleep 1
-          done
-
-      - name: Verify Mongo connection
-        run: |
-          until nc -z localhost 27017
-          do
-            sleep 1
-          done
-
       - name: npm install
         run: npm install
 
