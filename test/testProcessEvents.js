@@ -80,7 +80,7 @@ describe('Process events test', () => {
         await redisClient.disconnect()
     });
 
-    txnList.forEach(async function(txn) {
+    txnList.forEach(function(txn) {
         it('should process indexing bridge transaction', async () => {
             await processEventForChainBlock(txn.fromChainId, txn.fromChainBlock)
             await processEventForChainBlock(txn.toChainId, txn.toChainBlock)
