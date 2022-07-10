@@ -36,8 +36,8 @@ jobs:
       - name: npm install
         run: npm install
 
+      - name: Setup .env
+        run: cp $PWD/.env.sample $PWD/.env
+
       - name: npm test
         run: npm test
-        env:
-          TEST_MONGO_URI: "mongodb://localhost:27017/testdb"
-          TEST_REDIS_URI: "redis://localhost:6379"
