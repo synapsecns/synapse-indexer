@@ -21,6 +21,7 @@ export async function callRPCMethod(callable, logger, chainName="") {
             if (retryCnt > maxReties) {
                 throw err
             }
+            await new Promise(r => setTimeout(r, 1500));
         }
     }
     return res
