@@ -31,11 +31,11 @@ let txnList = [
         expectedRes: {"toTxnHash":"0xe09bdc045f575b94054ed1d5e3de776415e6d3569a685a57654162a154393c05","toAddress":"0xE71aF80FDe47c8c78f327354E4D25081058EC727","receivedValue":"222602920725739114825","receivedValueFormatted":222.602920725739,"toChainId":43114,"toChainBlock":17040278,"receivedTime":1657246937,"receivedTokenSymbol":"wAVAX","receivedTokenAddress":"0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7","kappa":"0x3b8679bb84ff181b9cf75940c2b810be51d139b98adfeb386894e1bad658cb20","pending":false,"__v":0,"fromAddress":"0xE71aF80FDe47c8c78f327354E4D25081058EC727","fromChainBlock":4257814,"fromChainId":53935,"fromTxnHash":"0x43208f684489b6b1805e7c51fc60cc1c087b62555c9486499ecb837e792daec4","sentTime":1657246927,"sentTokenAddress":"0xB57B60DeBDB0b8172bb6316a9164bd3C695F133a","sentTokenSymbol":"wAVAX","sentValue":"222691997524749014430","sentValueFormatted":222.691997524749}
     },
     {
-        fromChainId: ChainId.FANTOM,
-        fromChainBlock: 41149116 ,
-        toChainId: ChainId.POLYGON,
-        toChainBlock: 29904168,
-        expectedRes: {"fromTxnHash":"0x282d41ac201664c7419eedf58a36a990adbc81242eb0c12f8af473aee6e8f1fd","toAddress":"0xC6D922d34b354F949EF992eeFacE2F6F7a06fB29","fromAddress":"0x935b702Da05d8701AF3a6101166c7895ff5b3741","sentValue":"998882534","sentValueFormatted":998.882534,"sentValueUSD":998.552184986889,"fromChainId":250,"toChainId":137,"sentTime":1655982521,"sentTokenSymbol":"USDC","sentTokenAddress":"0x04068DA6C83AFCFA0e13ba15A6696662335D5B75","kappa":"0xfc2c4d7d2d8b7674daede0446f479a33c1ff07aad911ac36cd51c863dbb41219","pending":false,"__v":0,"receivedTime":1655982563,"receivedTokenAddress":"0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174","receivedTokenSymbol":"USDC","receivedValue":"997959253","receivedValueFormatted":997.959253,"receivedValueUSD":997.62920933307,"swapSuccess":true,"toTxnHash":"0x0c21f80c373139ea1157baf3fce32b33f8c764814b8915a9931a7eb872a85527","fromChainBlock":41149116,"toChainBlock":29904168}
+        fromChainId: ChainId.ARBITRUM,
+        fromChainBlock: 17229003 ,
+        toChainId: ChainId.OPTIMISM,
+        toChainBlock: 14062015,
+        expectedRes: {"fromTxnHash":"0x87ba82a105088172b03a4c51dfe7fc77c3a0d028ac46361f62545892ade6b7b9","toAddress":"0xf51e5a0A85d29AA0508894405D734BcF044dcb5b","fromAddress":"0xf51e5a0A85d29AA0508894405D734BcF044dcb5b","sentValue":"100000000000000000","sentValueFormatted":0.1,"fromChainId":42161,"toChainId":10,"fromChainBlock":17229003,"sentTime":1657253121,"sentTokenSymbol":"WETH","sentTokenAddress":"0x82aF49447D8a07e3bd95BD0d56f35241523fBab1","kappa":"0xbad4436b75bd5e4bc801e5eadaefab23d251e469ffc8b6f0eee5bf264697a846","pending":false,"__v":0,"receivedTime":1657253251,"receivedTokenAddress":"0x121ab82b49B2BC4c7901CA46B8277962b4350204","receivedTokenSymbol":"WETH","receivedValue":"96973053038470143","receivedValueFormatted":0.0969730530384701,"swapSuccess":true,"toChainBlock":14062015,"toTxnHash":"0x8134a3b9a55d5614b062030ea4901e39df11ca1640abe3bf8041d8256e8b1e73"}
     }
 ]
 
