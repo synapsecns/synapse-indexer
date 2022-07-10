@@ -1,0 +1,43 @@
+name: run tests
+
+on: [pull_request]
+
+jobs:
+  test:
+
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      matrix:
+        node-version:
+          - 16.15.x
+        platform:
+          - ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v2
+
+      - name: setup node env
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+
+      - name: npm install
+        run: npm install
+
+      - name: Setup .env
+        run: cp $PWD/.env.sample $PWD/.env
+
+      - name: npm test
+        run: npm test

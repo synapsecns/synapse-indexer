@@ -6,7 +6,7 @@
   "main": "run.js",
   "scripts": {
     "start": "node run.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test -r dotenv/config"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +23,8 @@
     "winston": "^3.7.2"
   },
   "devDependencies": {
+    "chai": "^4.3.6",
+    "mocha": "^10.0.0",
     "pg": "^8.7.3",
     "pg-cursor": "^2.7.3"
   }

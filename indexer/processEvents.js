@@ -1,11 +1,12 @@
-import {getEventForTopic, getTopicsHash, Topics, ApprovalHash} from "../config/topics.js";
+import {getEventForTopic, getTopicsHash, ApprovalHash} from "../config/topics.js";
 import {BridgeTransaction} from "../db/transaction.js";
-import {BigNumber, FixedNumber, ethers} from "ethers";
+import {BigNumber, ethers} from "ethers";
 import {ChainId} from "@synapseprotocol/sdk";
 import {getBasePoolAbi, getTokenContract} from "../config/chainConfig.js";
 import {getIndexerLogger} from "../utils/loggerUtils.js";
 import {getFormattedValue, getCachedUSDPriceForChainToken} from "../utils/currencyUtils.js";
 import {getCurrentISODate} from "../utils/timeUtils.js";
+import {callRPCMethod} from "../utils/requestUtils.js";
 
 /**
  * Get name of contract function that emits the event
@@ -257,8 +258,8 @@ export async function processEvents(contract, chainConfig, events) {
     for (let event of events) {
 
         const txnHash = event.transactionHash;
-        const txn = await event.getTransaction();
-        const block = await event.getBlock();
+        const txn = await callRPCMethod(event.getTransaction, logger, chainConfig.name);
+        const block = await callRPCMethod(event.getBlock, logger, chainConfig.name);
         const timestamp = block.timestamp;
         const blockNumber = block.number;
 
@@ -267,23 +268,10 @@ export async function processEvents(contract, chainConfig, events) {
         const eventDirection = eventInfo.direction;
         const eventName = eventInfo.eventName;
 
-        logger.debug(eventInfo)
+        logger.debug(eventInfo.toString())
 
         // Try to get txn receipt again and again until it fails
-        let retryCnt = 0
-        let maxReties = 3
-        let txnReceipt = null
-        while (!txnReceipt) {
-            try {
-                txnReceipt = await event.getTransactionReceipt();
-            } catch (err) {
-                retryCnt += 1
-                logger.warn(`Retry cnt - ${retryCnt} - failed to get txn receipt for event with txn Hash ${txnHash}`)
-                if (retryCnt > maxReties) {
-                    throw err
-                }
-            }
-        }
+        let txnReceipt = await callRPCMethod(event.getTransactionReceipt, logger, chainConfig.name);
 
         let eventLogArgs = getEventLogArgs(
             contract.interface,
