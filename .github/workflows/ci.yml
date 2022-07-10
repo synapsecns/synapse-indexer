@@ -38,3 +38,6 @@ jobs:
 
       - name: npm test
         run: npm test
+        env:
+          TEST_MONGO_URI: "mongodb://localhost:27017/testdb"
+          TEST_REDIS_URI: "redis://localhost:6379"
