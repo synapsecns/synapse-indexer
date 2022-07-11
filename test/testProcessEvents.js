@@ -36,7 +36,14 @@ let txnList = [
         toChainId: ChainId.OPTIMISM,
         toChainBlock: 14062015,
         expectedRes: {"fromTxnHash":"0x87ba82a105088172b03a4c51dfe7fc77c3a0d028ac46361f62545892ade6b7b9","toAddress":"0xf51e5a0A85d29AA0508894405D734BcF044dcb5b","fromAddress":"0xf51e5a0A85d29AA0508894405D734BcF044dcb5b","sentValue":"100000000000000000","sentValueFormatted":0.1,"fromChainId":42161,"toChainId":10,"fromChainBlock":17229003,"sentTime":1657253121,"sentTokenSymbol":"WETH","sentTokenAddress":"0x82aF49447D8a07e3bd95BD0d56f35241523fBab1","kappa":"0xbad4436b75bd5e4bc801e5eadaefab23d251e469ffc8b6f0eee5bf264697a846","pending":false,"__v":0,"receivedTime":1657253251,"receivedTokenAddress":"0x121ab82b49B2BC4c7901CA46B8277962b4350204","receivedTokenSymbol":"WETH","receivedValue":"96973053038470143","receivedValueFormatted":0.0969730530384701,"swapSuccess":true,"toChainBlock":14062015,"toTxnHash":"0x8134a3b9a55d5614b062030ea4901e39df11ca1640abe3bf8041d8256e8b1e73"}
-    }
+    },
+    {
+        fromChainId: ChainId.ETH,
+        fromChainBlock:15035231 ,
+        toChainId: ChainId.MOONRIVER,
+        toChainBlock: 2102530,
+        expectedRes: {"fromTxnHash":"0x6366ef45b49b48efd62d7bd6ab1043b1f7012dd19b0949d139808c030f3c3db0","toAddress":"0xa2917120C698fb5F2A03e3fD3524bdA85a3eaEF6","fromAddress":"0xa2917120C698fb5F2A03e3fD3524bdA85a3eaEF6","sentValue":"10100000000000000182480","sentValueFormatted":10100,"sentValueUSD":10105.6833211032,"fromChainId":1,"toChainId":1285,"fromChainBlock":15035231,"sentTime":1656346921,"sentTokenSymbol":"FRAX","sentTokenAddress":"0x853d955aCEf822Db058eb8505911ED77F175b99e","kappa":"0x2853fcab4b85bebbcb5ecb2226a0b430212206f7d3d89dff016bbe18ed00d308","pending":false,"__v":0,"receivedTime":1656347058,"receivedTokenAddress":"0xE96AC70907ffF3Efee79f502C985A7A21Bce407d","receivedValue":"10098990000000000182462","receivedValueFormatted":10098.99,"receivedValueUSD":10084.3390098276,"toChainBlock":2102530,"toTxnHash":"0xcd95ebff58d57b48a8c8fd72911c7cab689ea68de3ebdf6f696fd1af20d8a720"}
+    },
 ]
 
 async function processEventForChainBlock(chainId, chainBlock) {
