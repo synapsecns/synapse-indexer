@@ -1,5 +1,7 @@
 # Synapse Indexer
 
+[![codecov](https://codecov.io/gh/synapsecns/synapse-indexer/branch/master/graph/badge.svg?token=GHI8KQCMOB)](https://codecov.io/gh/synapsecns/synapse-indexer)
+
 Indexes Bridge Transactions for Synapse across all chains.
 
 ### Setup
