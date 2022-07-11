@@ -1,6 +1,10 @@
 name: run tests
 
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - 'master'
 
 jobs:
   test:
@@ -39,5 +43,11 @@ jobs:
       - name: Setup .env
         run: cp $PWD/.env.sample $PWD/.env
 
-      - name: npm test
-        run: npm test
+      - name: run tests w coverage
+        run: npm run test:coverage
+
+      - name: Upload test coverage
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov
