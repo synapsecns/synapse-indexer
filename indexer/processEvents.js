@@ -325,7 +325,13 @@ export async function processEvents(contract, chainConfig, events) {
 
             if (eventName === "TokenWithdrawAndRemove" || eventName ==="TokenMintAndSwap") {
                 let input = txn.data
-                let inputArgs = contract.interface.decodeFunctionData(getFunctionForEvent(eventName), input)
+                let inputArgs = {}
+                try {
+                    inputArgs = contract.interface.decodeFunctionData(getFunctionForEvent(eventName), input)
+                } catch (err) {
+                    logger.error(`Unable to decode txn args! ${err}`)
+                    continue;
+                }
 
                 // Get list of stable coin addresses
                 let swapPoolAddresses = await getSwapPoolCoinAddresses(
