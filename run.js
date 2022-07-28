@@ -10,6 +10,7 @@ let redisClient = await RedisConnection.getClient();
 
 import {indexForward} from "./indexer/indexForward.js";
 import {indexBackward} from "./indexer/indexBackward.js";
+import {indexOlderTransactions} from "./indexer/indexOlderTransactions.js"
 import {ChainConfig} from "./config/chainConfig.js";
 
 let indexingInterval = 15000; // ideally 15 seconds
@@ -22,4 +23,9 @@ for (let key of Object.keys(ChainConfig)) {
 
     setInterval(indexForward, indexingInterval, ChainConfig[key])
     setInterval(indexBackward, indexingInterval, ChainConfig[key])
+
+    // Index older transactions
+    if (ChainConfig[key].oldestBlock) {
+        indexOlderTransactions(ChainConfig[key]).then(() => console.log(`Finished backindexing ${ChainConfig[key].name}`))
+    }
 }

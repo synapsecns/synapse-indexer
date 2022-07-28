@@ -13,7 +13,8 @@ const ChainConfig = {
         name: Networks.ETH.name,
         rpc: () => (process.env.ETH_RPC),
         bridge: "0x2796317b0ff8538f253012862c06787adfb8ceb6",
-        startBlock: 13037798,
+        startBlock: 14772871, // Block to backindex until
+        oldestBlock: 13037798, // Start indexing older txns from here until startblock
         tokens: buildTokenInfo(ChainId.ETH),
     },
     [ChainId.BSC] : {
@@ -21,7 +22,8 @@ const ChainConfig = {
         name: Networks.BSC.name,
         rpc: () => (process.env.BSC_RPC),
         bridge: "0xd123f70ae324d34a9e76b67a27bf77593ba8749f",
-        startBlock: 10087779,
+        startBlock: 17792524,
+        oldestBlock: 10087779,
         tokens: buildTokenInfo(ChainId.BSC),
     },
     [ChainId.ARBITRUM] : {
@@ -29,7 +31,8 @@ const ChainConfig = {
         name: Networks.ARBITRUM.name,
         rpc: () => (process.env.ARB_RPC),
         bridge: "0x6f4e8eba4d337f874ab57478acc2cb5bacdc19c9",
-        startBlock: 748263,
+        startBlock: 12058508,
+        oldestBlock: 748263,
         tokens: buildTokenInfo(ChainId.ARBITRUM),
     },
     [ChainId.AVALANCHE] : {
@@ -37,7 +40,8 @@ const ChainConfig = {
         name: Networks.AVALANCHE.name,
         rpc: () => (process.env.AVAX_RPC),
         bridge: "0xc05e61d0e7a63d27546389b7ad62fdff5a91aace",
-        startBlock: 3427948,
+        startBlock: 14664267,
+        oldestBlock: 3427948,
         tokens: buildTokenInfo(ChainId.AVALANCHE),
     },
     [ChainId.POLYGON] : {
@@ -45,7 +49,8 @@ const ChainConfig = {
         name: Networks.POLYGON.name,
         rpc: () => (process.env.POLYGON_RPC),
         bridge: "0x8f5bbb2bb8c2ee94639e55d5f41de9b4839c1280",
-        startBlock:18059138,
+        startBlock: 28318916,
+        oldestBlock: 18059138,
         tokens: buildTokenInfo(ChainId.POLYGON),
     },
     [ChainId.FANTOM] : {
@@ -53,7 +58,8 @@ const ChainConfig = {
         name: Networks.FANTOM.name,
         rpc: () => (process.env.FTM_RPC),
         bridge: "0xaf41a65f786339e7911f4acdad6bd49426f2dc6b",
-        startBlock:18537414,
+        startBlock: 38182430,
+        oldestBlock: 18537414,
         tokens: buildTokenInfo(ChainId.FANTOM),
     },
     [ChainId.HARMONY] : {
@@ -61,7 +67,8 @@ const ChainConfig = {
         name: Networks.HARMONY.name,
         rpc: () => (process.env.HARMONY_RPC),
         bridge: "0xaf41a65f786339e7911f4acdad6bd49426f2dc6b",
-        startBlock: 18936014,
+        startBlock: 19163634,
+        oldestBlock: 18936014,
         tokens: buildTokenInfo(ChainId.HARMONY),
     },
     [ChainId.BOBA] : {
