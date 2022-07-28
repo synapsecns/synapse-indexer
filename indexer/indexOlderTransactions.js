@@ -55,7 +55,7 @@ export async function indexOlderTransactions(chainConfig) {
                 }
             }
             let endTime = getEpochSeconds();
-            logger.debug(`processing ${chainName} blocks from ${b} to ${b + 500}  took ${endTime - startTime} seconds`)
+            logger.debug(`processing ${chainName} blocks from ${b} to ${b + 500} (target: ${endBlock}) took ${endTime - startTime} seconds with ${filteredEvents.length} events`)
 
             await redisClient.set(`${chainName}_NEWEST_BACKINDEXED_BLOCK`, b + 500)
         }
