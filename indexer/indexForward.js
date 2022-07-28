@@ -6,7 +6,7 @@ import {getIndexerLogger} from "../utils/loggerUtils.js";
 import {getEpochSeconds} from "../utils/timeUtils.js";
 import {buildBridgeContract, getBridgeContractAbi, getW3Provider} from "../config/chainConfig.js";
 
-let FORWARD_BLOCK_INTERVAL = 200
+let FORWARD_BLOCK_INTERVAL = 350
 
 export async function indexForward(chainConfig) {
     let logger = getIndexerLogger(`${chainConfig.name}_${indexForward.name}`)
@@ -22,16 +22,9 @@ export async function indexForward(chainConfig) {
         return;
     }
 
-    // Release lock in about 45 seconds
-    let forwardTimeout = 45
-
-    // In light of the harmony bridge, lot of txn bw DFK and Avalanche
-    if (chainConfig.id === 53935 || chainConfig.id === 43114) {
-        forwardTimeout = 1800
-        logger.info(`Setting timeout as ${forwardTimeout} for ${chainConfig.id}`)
-    } else {
-        logger.info(`Setting timeout ${forwardTimeout}`)
-    }
+    // Release lock in about 5 minutes, incase of restart while locked
+    let forwardTimeout = 300
+    logger.info(`Setting timeout ${forwardTimeout}`)
     await redisClient.set(`${chainName}_IS_INDEXING_FORWARD`, "true", 'EX', forwardTimeout)
 
     try {

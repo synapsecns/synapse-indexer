@@ -135,6 +135,14 @@ const ChainConfig = {
         startBlock: 0,
         tokens: buildTokenInfo(ChainId.DFK),
     },
+    [ChainId.KLAYTN] : {
+        id: ChainId.KLAYTN,
+        name: Networks.KLAYTN.name,
+        rpc: () => (process.env.KLAYTN_RPC),
+        bridge: "0xAf41a65F786339e7911F4acDAD6BD49426F2Dc6b",
+        startBlock: 93801362,
+        tokens: buildTokenInfo(ChainId.KLAYTN),
+    },
 }
 
 

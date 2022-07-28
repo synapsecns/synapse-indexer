@@ -447,6 +447,7 @@ export async function processEvents(contract, chainConfig, events) {
                 BigNumber.from(receivedValue).sub(BigNumber.from(data.fee));
             }
             console.log(`Value after subtraction is ${receivedValue}`)
+            receivedValue = receivedValue.toString()
 
             await upsertBridgeTxnInDb(kappa, {
                     toTxnHash: txnHash,

@@ -13,7 +13,7 @@ import {indexBackward} from "./indexer/indexBackward.js";
 import {indexOlderTransactions} from "./indexer/indexOlderTransactions.js"
 import {ChainConfig} from "./config/chainConfig.js";
 
-let indexingInterval = 15000; // ideally 15 seconds
+let indexingInterval = 5000; // ideally 15 seconds
 
 // Schedule indexing for all chains inside ChainConfig
 for (let key of Object.keys(ChainConfig)) {
